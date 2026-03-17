@@ -1,0 +1,11 @@
+{
+  "security": {
+    "shell": "deny",
+    "filesystem": "deny",
+    "browser": "deny",
+    "network": "deny"
+  },
+  "messaging": {
+    "allowlist": []
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "name": "safeclaw",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Security toolkit for AI agent platforms — config hardening, skill scanning, and risk assessment for OpenClaw and NanoClaw",
+  "workspaces": [
+    "packages/config-engine",
+    "packages/skill-scanner",
+    "packages/dashboard"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace=packages/dashboard",
+    "build": "npm run build --workspaces",
+    "docker:up": "docker compose -f docker/docker-compose.yml up -d",
+    "docker:down": "docker compose -f docker/docker-compose.yml down",
+    "docker:pull-model": "docker exec safeclaw-ollama ollama pull llama3.2:1b",
+    "test": "npx playwright test",
+    "test:ui": "npx playwright test --ui"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.58.2"
+  }
+}

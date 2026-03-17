@@ -1,0 +1,54 @@
+services:
+  openclaw:
+    image: ghcr.io/openclaw/openclaw:latest
+    container_name: safeclaw-openclaw
+    volumes:
+      - ./openclaw-defaults/openclaw.json:/home/node/.openclaw/openclaw.json
+      - openclaw-data:/home/node/.openclaw/skills
+    networks:
+      - safeclaw-net
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /home/node/.openclaw/tmp:uid=1000,gid=1000
+      - /home/node/.openclaw/canvas:uid=1000,gid=1000
+      - /home/node/.openclaw/cron:uid=1000,gid=1000
+      - /home/node/.openclaw/workspace:uid=1000,gid=1000
+      - /home/node/.openclaw/agents:uid=1000,gid=1000
+    depends_on:
+      - ollama
+    environment:
+      - OLLAMA_HOST=http://ollama:11434
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: safeclaw-ollama
+    volumes:
+      - ollama-models:/root/.ollama
+    networks:
+      - safeclaw-net
+    ports:
+      - "11434:11434"
+
+  dashboard:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.dashboard
+    container_name: safeclaw-dashboard
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./openclaw-defaults:/config
+    networks:
+      - safeclaw-net
+    environment:
+      - NODE_ENV=production
+      - OPENCLAW_CONFIG_PATH=/config/openclaw.json
+
+networks:
+  safeclaw-net:
+    driver: bridge
+
+volumes:
+  openclaw-data:
+  ollama-models:
