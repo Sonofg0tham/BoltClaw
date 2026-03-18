@@ -21,6 +21,10 @@ export interface ScanResult {
   platform: SkillPlatform;
 }
 
+const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2 MB per file
+const MAX_FILE_COUNT = 5000;
+const MAX_DEPTH = 10;
+
 const SCANNABLE_EXTENSIONS = new Set([
   ".md",
   ".txt",
@@ -35,14 +39,18 @@ const SCANNABLE_EXTENSIONS = new Set([
   ".toml",
 ]);
 
-async function collectFiles(dir: string): Promise<string[]> {
+const SKIP_DIRS = new Set(["node_modules", ".git", ".env", ".aws", ".ssh", ".vscode"]);
+
+async function collectFiles(dir: string, depth = 0): Promise<string[]> {
+  if (depth > MAX_DEPTH) return [];
   const results: string[] = [];
   const entries = await readdir(dir, { withFileTypes: true });
   for (const entry of entries) {
+    if (results.length >= MAX_FILE_COUNT) break;
     const fullPath = join(dir, entry.name);
     if (entry.isDirectory()) {
-      if (entry.name === "node_modules" || entry.name === ".git") continue;
-      results.push(...(await collectFiles(fullPath)));
+      if (SKIP_DIRS.has(entry.name) || entry.name.startsWith(".env")) continue;
+      results.push(...(await collectFiles(fullPath, depth + 1)));
     } else {
       const ext = entry.name.substring(entry.name.lastIndexOf("."));
       if (SCANNABLE_EXTENSIONS.has(ext)) {
@@ -84,6 +92,8 @@ export async function scanSkill(skillPath: string, originalPath?: string): Promi
   const matches: ScanMatch[] = [];
 
   for (const file of files) {
+    const fileInfo = await stat(file);
+    if (fileInfo.size > MAX_FILE_SIZE) continue;
     const content = await readFile(file, "utf-8");
     const lines = content.split("\n");
 

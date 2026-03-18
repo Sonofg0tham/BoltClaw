@@ -1,5 +1,6 @@
 import "dotenv/config";
 import express from "express";
+import helmet from "helmet";
 import { readConfig, writeConfig, listBackups, restoreConfig, scoreConfig, PROFILES } from "@safeclaw/config-engine";
 import { scanSkill } from "@safeclaw/skill-scanner";
 import { existsSync } from "node:fs";
@@ -13,7 +14,8 @@ import { z } from "zod";
 const execFileAsync = promisify(execFile);
 
 const app = express();
-app.use(express.json());
+app.use(helmet());
+app.use(express.json({ limit: "1mb" }));
 
 const PORT = parseInt(process.env.PORT || "3000", 10);
 
@@ -46,6 +48,10 @@ function logEvent(action: AuditEvent["action"], severity: AuditEvent["severity"]
 
 const SCAN_ROOT = process.env.SAFECLAW_SCAN_ROOT || undefined;
 
+// Simple concurrency limiter for scans (prevents DoS via many parallel git clones)
+let activeScans = 0;
+const MAX_CONCURRENT_SCANS = 3;
+
 // --- GitHub URL Fetching ---
 
 const GITHUB_URL_RE = /^https:\/\/github\.com\/[\w.-]+\/[\w.-]+(\/tree\/[\w.-]+\/([\w./-]+))?$/;
@@ -67,10 +73,18 @@ async function fetchGitHubSkill(url: string): Promise<{ tmpDir: string; scanPath
     ], { timeout: 30000 });
   } catch (err) {
     await rm(tmpDir, { recursive: true, force: true });
-    throw new Error(`Failed to clone repository: ${String(err)}`);
+    console.error("Failed to clone repository:", err);
+    throw new Error("Failed to clone repository");
   }
 
   const scanPath = subPath ? join(tmpDir, subPath) : tmpDir;
+  // Prevent path traversal via ../ in the GitHub URL subpath
+  const resolvedScan = resolve(scanPath);
+  const resolvedTmp = resolve(tmpDir);
+  if (!resolvedScan.startsWith(resolvedTmp + "/") && resolvedScan !== resolvedTmp) {
+    await rm(tmpDir, { recursive: true, force: true });
+    throw new Error("Invalid subpath: directory traversal not allowed");
+  }
   if (!existsSync(scanPath)) {
     await rm(tmpDir, { recursive: true, force: true });
     throw new Error(`Path not found in repository: ${subPath}`);
@@ -169,7 +183,8 @@ app.get("/api/config", async (_req, res) => {
     logEvent("config_read", "info", "Configuration loaded");
     res.json({ config, score });
   } catch (err) {
-    res.status(500).json({ error: "Failed to read config", detail: String(err) });
+    console.error("Failed to read config:", err);
+    res.status(500).json({ error: "Failed to read config" });
   }
 });
 
@@ -185,7 +200,8 @@ app.post("/api/config", async (req, res) => {
     logEvent("config_write", "warning", "Configuration updated", { keys: Object.keys(parsed.data.safeclaw.security) });
     res.json({ success: true, score });
   } catch (err) {
-    res.status(500).json({ error: "Failed to write config", detail: String(err) });
+    console.error("Failed to write config:", err);
+    res.status(500).json({ error: "Failed to write config" });
   }
 });
 
@@ -194,7 +210,8 @@ app.get("/api/config/backups", async (_req, res) => {
     const backups = await listBackups(CONFIG_DIR);
     res.json({ backups });
   } catch (err) {
-    res.status(500).json({ error: "Failed to list backups", detail: String(err) });
+    console.error("Failed to list backups:", err);
+    res.status(500).json({ error: "Failed to list backups" });
   }
 });
 
@@ -211,7 +228,8 @@ app.post("/api/config/restore", async (req, res) => {
     logEvent("config_restore", "warning", "Config restored from backup", { filename: parsed.data.filename });
     res.json({ success: true, config, score });
   } catch (err) {
-    res.status(500).json({ error: "Restore failed", detail: String(err) });
+    console.error("Restore failed:", err);
+    res.status(500).json({ error: "Restore failed" });
   }
 });
 
@@ -225,6 +243,12 @@ app.post("/api/scan", async (req, res) => {
     res.status(400).json({ error: parsed.error.issues[0]?.message || "Invalid scan request" });
     return;
   }
+  if (activeScans >= MAX_CONCURRENT_SCANS) {
+    res.status(429).json({ error: "Too many scans in progress, please try again shortly" });
+    return;
+  }
+  activeScans++;
+
   const skillPath = parsed.data.path;
   const isGitHubUrl = skillPath.startsWith("https://github.com/");
 
@@ -237,6 +261,7 @@ app.post("/api/scan", async (req, res) => {
       scanTarget = fetched.scanPath;
       tmpDir = fetched.tmpDir;
     } catch (err) {
+      activeScans--;
       res.status(400).json({ error: String(err instanceof Error ? err.message : err) });
       return;
     }
@@ -245,12 +270,14 @@ app.post("/api/scan", async (req, res) => {
     if (SCAN_ROOT) {
       const resolved = resolve(normalize(skillPath));
       const root = resolve(normalize(SCAN_ROOT));
-      if (!resolved.startsWith(root)) {
+      if (!resolved.startsWith(root + "/") && resolved !== root) {
+        activeScans--;
         res.status(400).json({ error: "Scan path is outside the allowed directory" });
         return;
       }
     }
     if (!existsSync(skillPath)) {
+      activeScans--;
       res.status(400).json({ error: `Path does not exist: ${skillPath}` });
       return;
     }
@@ -266,8 +293,10 @@ app.post("/api/scan", async (req, res) => {
     logEvent("scan", result.riskLevel === "danger" ? "danger" : "info", `Skill scanned: ${skillPath} — ${result.riskLevel}`, { path: skillPath, riskScore: result.riskScore, riskLevel: result.riskLevel, matches: result.matches.length });
     res.json(result);
   } catch (err) {
-    res.status(500).json({ error: "Scan failed", detail: String(err) });
+    console.error("Scan failed:", err);
+    res.status(500).json({ error: "Scan failed" });
   } finally {
+    activeScans--;
     if (tmpDir) {
       rm(tmpDir, { recursive: true, force: true }).catch(() => {});
     }

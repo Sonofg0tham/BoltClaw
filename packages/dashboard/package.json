@@ -13,6 +13,7 @@
     "@safeclaw/skill-scanner": "*",
     "dotenv": "^17.3.1",
     "express": "^5.1.0",
+    "helmet": "^8.1.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "zod": "^4.3.6"

@@ -30,7 +30,9 @@ function safeclawPath(configDir: string): string {
 function deepMerge<T>(base: T, override: any): T {
   if (typeof base !== "object" || base === null || Array.isArray(base)) return override ?? base;
   const result = { ...base } as Record<string, unknown>;
+  const DANGEROUS_KEYS = new Set(["__proto__", "constructor", "prototype"]);
   for (const key of Object.keys(override)) {
+    if (DANGEROUS_KEYS.has(key)) continue;
     const baseVal = result[key];
     const overVal = override[key];
     if (
