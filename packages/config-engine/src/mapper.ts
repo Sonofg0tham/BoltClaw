@@ -1,19 +1,19 @@
 import type {
   CombinedConfig,
   OpenClawConfig,
-  SafeClawConfig,
+  ClawGuardConfig,
   PermissionLevel,
   GatewayBind,
   SandboxMode,
 } from "./schema.js";
 
 /**
- * Apply SafeClaw security settings to the OpenClaw config.
- * Maps SafeClaw abstractions to real OpenClaw fields where possible.
+ * Apply ClawGuard security settings to the OpenClaw config.
+ * Maps ClawGuard abstractions to real OpenClaw fields where possible.
  */
-export function applySafeClawToOpenClaw(combined: CombinedConfig): OpenClawConfig {
+export function applyClawGuardToOpenClaw(combined: CombinedConfig): OpenClawConfig {
   const oc = structuredClone(combined.openclaw);
-  const sc = combined.safeclaw;
+  const sc = combined.clawguard;
 
   // Network access toggle → gateway.bind + gateway.mode
   if (sc.security.network === "allow") {
@@ -32,11 +32,11 @@ export function applySafeClawToOpenClaw(combined: CombinedConfig): OpenClawConfi
 }
 
 /**
- * Infer SafeClaw settings from an OpenClaw config.
+ * Infer ClawGuard settings from an OpenClaw config.
  * Used when someone edits openclaw.json directly.
  */
-export function inferSafeClawFromOpenClaw(oc: OpenClawConfig): Partial<SafeClawConfig> {
-  const inferred: Partial<SafeClawConfig> = {};
+export function inferClawGuardFromOpenClaw(oc: OpenClawConfig): Partial<ClawGuardConfig> {
+  const inferred: Partial<ClawGuardConfig> = {};
 
   // Infer network access from gateway.bind
   const bind = oc.gateway?.bind;

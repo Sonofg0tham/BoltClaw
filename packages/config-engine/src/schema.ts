@@ -1,4 +1,4 @@
-// --- Permission levels (SafeClaw abstraction) ---
+// --- Permission levels (ClawGuard abstraction) ---
 
 export type PermissionLevel = "deny" | "ask" | "allow";
 export type Severity = "safe" | "caution" | "warning" | "danger";
@@ -41,21 +41,21 @@ export interface OpenClawConfig {
   skills?: {
     allowBundled?: string[];
   };
-  // Preserve any keys SafeClaw doesn't manage
+  // Preserve any keys ClawGuard doesn't manage
   [key: string]: unknown;
 }
 
-// --- SafeClaw's sidecar config ---
+// --- ClawGuard's sidecar config ---
 
-export interface SafeClawSecurity {
+export interface ClawGuardSecurity {
   shell: PermissionLevel;
   filesystem: PermissionLevel;
   browser: PermissionLevel;
   network: PermissionLevel;
 }
 
-export interface SafeClawConfig {
-  security: SafeClawSecurity;
+export interface ClawGuardConfig {
+  security: ClawGuardSecurity;
   messaging: {
     allowlist: string[];
   };
@@ -65,12 +65,12 @@ export interface SafeClawConfig {
 
 export interface CombinedConfig {
   openclaw: OpenClawConfig;
-  safeclaw: SafeClawConfig;
+  clawguard: ClawGuardConfig;
 }
 
 // --- Security setting metadata (for UI toggles) ---
 
-export type SecuritySettingKey = keyof SafeClawSecurity;
+export type SecuritySettingKey = keyof ClawGuardSecurity;
 
 export interface SecuritySettingMeta {
   key: SecuritySettingKey;
@@ -148,7 +148,7 @@ export const DEFAULT_OPENCLAW_CONFIG: OpenClawConfig = {
   },
 };
 
-export const DEFAULT_SAFECLAW_CONFIG: SafeClawConfig = {
+export const DEFAULT_SAFECLAW_CONFIG: ClawGuardConfig = {
   security: {
     shell: "deny",
     filesystem: "deny",
@@ -162,5 +162,5 @@ export const DEFAULT_SAFECLAW_CONFIG: SafeClawConfig = {
 
 export const DEFAULT_COMBINED_CONFIG: CombinedConfig = {
   openclaw: DEFAULT_OPENCLAW_CONFIG,
-  safeclaw: DEFAULT_SAFECLAW_CONFIG,
+  clawguard: DEFAULT_SAFECLAW_CONFIG,
 };

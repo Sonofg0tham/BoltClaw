@@ -4,11 +4,11 @@ import { existsSync, mkdirSync } from "node:fs";
 import {
   type CombinedConfig,
   type OpenClawConfig,
-  type SafeClawConfig,
+  type ClawGuardConfig,
   DEFAULT_OPENCLAW_CONFIG,
   DEFAULT_SAFECLAW_CONFIG,
 } from "./schema.js";
-import { applySafeClawToOpenClaw, inferSafeClawFromOpenClaw } from "./mapper.js";
+import { applyClawGuardToOpenClaw, inferClawGuardFromOpenClaw } from "./mapper.js";
 
 function resolveConfigDir(): string {
   if (process.env.OPENCLAW_CONFIG_PATH) {
@@ -22,8 +22,8 @@ function openclawPath(configDir: string): string {
   return join(configDir, "openclaw.json");
 }
 
-function safeclawPath(configDir: string): string {
-  return join(configDir, "safeclaw.json");
+function clawguardPath(configDir: string): string {
+  return join(configDir, "clawguard.json");
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -52,10 +52,10 @@ function deepMerge<T>(base: T, override: any): T {
 }
 
 /**
- * Detect if a parsed JSON object is the old SafeClaw format
+ * Detect if a parsed JSON object is the old ClawGuard format
  * (has security.shell, messaging.allowlist, etc. at root)
  */
-function isOldSafeClawFormat(parsed: Record<string, unknown>): boolean {
+function isOldClawGuardFormat(parsed: Record<string, unknown>): boolean {
   return (
     typeof parsed.security === "object" &&
     parsed.security !== null &&
@@ -64,12 +64,12 @@ function isOldSafeClawFormat(parsed: Record<string, unknown>): boolean {
 }
 
 /**
- * Migrate old SafeClaw format to the new split format.
- * Returns the SafeClaw sidecar config extracted from the old format.
+ * Migrate old ClawGuard format to the new split format.
+ * Returns the ClawGuard sidecar config extracted from the old format.
  */
 function migrateOldFormat(parsed: Record<string, unknown>): {
   openclaw: OpenClawConfig;
-  safeclaw: SafeClawConfig;
+  clawguard: ClawGuardConfig;
 } {
   const old = parsed as {
     security?: { shell?: string; filesystem?: string; browser?: string; network?: string };
@@ -79,12 +79,12 @@ function migrateOldFormat(parsed: Record<string, unknown>): {
     network?: { expose?: boolean; port?: number };
   };
 
-  const safeclaw: SafeClawConfig = {
+  const clawguard: ClawGuardConfig = {
     security: {
-      shell: (old.security?.shell as SafeClawConfig["security"]["shell"]) || "deny",
-      filesystem: (old.security?.filesystem as SafeClawConfig["security"]["filesystem"]) || "deny",
-      browser: (old.security?.browser as SafeClawConfig["security"]["browser"]) || "deny",
-      network: (old.security?.network as SafeClawConfig["security"]["network"]) || "deny",
+      shell: (old.security?.shell as ClawGuardConfig["security"]["shell"]) || "deny",
+      filesystem: (old.security?.filesystem as ClawGuardConfig["security"]["filesystem"]) || "deny",
+      browser: (old.security?.browser as ClawGuardConfig["security"]["browser"]) || "deny",
+      network: (old.security?.network as ClawGuardConfig["security"]["network"]) || "deny",
     },
     messaging: {
       allowlist: old.messaging?.allowlist || [],
@@ -95,15 +95,15 @@ function migrateOldFormat(parsed: Record<string, unknown>): {
     ...DEFAULT_OPENCLAW_CONFIG,
     gateway: {
       ...DEFAULT_OPENCLAW_CONFIG.gateway,
-      bind: safeclaw.security.network === "allow" ? "lan" : "loopback",
-      mode: safeclaw.security.network === "allow" ? "remote" : "local",
+      bind: clawguard.security.network === "allow" ? "lan" : "loopback",
+      mode: clawguard.security.network === "allow" ? "remote" : "local",
     },
     skills: {
       allowBundled: old.skills?.allowBundled ? ["*"] : [],
     },
   };
 
-  return { openclaw, safeclaw };
+  return { openclaw, clawguard };
 }
 
 export async function readConfig(
@@ -118,14 +118,14 @@ export async function readConfig(
     const parsed = JSON.parse(raw) as Record<string, unknown>;
 
     // Auto-detect and migrate old format
-    if (isOldSafeClawFormat(parsed)) {
+    if (isOldClawGuardFormat(parsed)) {
       const migrated = migrateOldFormat(parsed);
       // Write both new files (back up old one first)
       await backupFile(ocPath);
       await writeFile(ocPath, JSON.stringify(migrated.openclaw, null, 2), "utf-8");
-      const scPath = safeclawPath(configDir);
-      await writeFile(scPath, JSON.stringify(migrated.safeclaw, null, 2), "utf-8");
-      return { openclaw: migrated.openclaw, safeclaw: migrated.safeclaw };
+      const scPath = clawguardPath(configDir);
+      await writeFile(scPath, JSON.stringify(migrated.clawguard, null, 2), "utf-8");
+      return { openclaw: migrated.openclaw, clawguard: migrated.clawguard };
     }
 
     openclaw = deepMerge(DEFAULT_OPENCLAW_CONFIG, parsed);
@@ -133,21 +133,21 @@ export async function readConfig(
     openclaw = { ...DEFAULT_OPENCLAW_CONFIG };
   }
 
-  // Read SafeClaw sidecar config
-  let safeclaw: SafeClawConfig;
-  const scPath = safeclawPath(configDir);
+  // Read ClawGuard sidecar config
+  let clawguard: ClawGuardConfig;
+  const scPath = clawguardPath(configDir);
 
   try {
     const raw = await readFile(scPath, "utf-8");
     const parsed = JSON.parse(raw);
-    safeclaw = deepMerge(DEFAULT_SAFECLAW_CONFIG, parsed);
+    clawguard = deepMerge(DEFAULT_SAFECLAW_CONFIG, parsed);
   } catch {
     // No sidecar yet — infer from OpenClaw config
-    const inferred = inferSafeClawFromOpenClaw(openclaw);
-    safeclaw = deepMerge(DEFAULT_SAFECLAW_CONFIG, inferred);
+    const inferred = inferClawGuardFromOpenClaw(openclaw);
+    clawguard = deepMerge(DEFAULT_SAFECLAW_CONFIG, inferred);
   }
 
-  return { openclaw, safeclaw };
+  return { openclaw, clawguard };
 }
 
 export async function writeConfig(
@@ -160,17 +160,17 @@ export async function writeConfig(
   }
 
   const ocPath = openclawPath(dir);
-  const scPath = safeclawPath(dir);
+  const scPath = clawguardPath(dir);
 
   // Back up both files
   await backupFile(ocPath);
   await backupFile(scPath);
 
-  // Apply SafeClaw mappings to OpenClaw config before writing
-  const openclawOut = applySafeClawToOpenClaw(combined);
+  // Apply ClawGuard mappings to OpenClaw config before writing
+  const openclawOut = applyClawGuardToOpenClaw(combined);
 
   await writeFile(ocPath, JSON.stringify(openclawOut, null, 2), "utf-8");
-  await writeFile(scPath, JSON.stringify(combined.safeclaw, null, 2), "utf-8");
+  await writeFile(scPath, JSON.stringify(combined.clawguard, null, 2), "utf-8");
 }
 
 async function backupFile(filePath: string): Promise<string | null> {
@@ -180,7 +180,7 @@ async function backupFile(filePath: string): Promise<string | null> {
   if (!existsSync(backupDir)) {
     mkdirSync(backupDir, { recursive: true });
   }
-  const basename = filePath.endsWith("safeclaw.json") ? "safeclaw" : "openclaw";
+  const basename = filePath.endsWith("clawguard.json") ? "clawguard" : "openclaw";
   const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
   const backupPath = join(backupDir, `${basename}-${timestamp}.json`);
   await copyFile(filePath, backupPath);
@@ -191,7 +191,7 @@ export async function backupConfig(
   configDir: string = resolveConfigDir(),
 ): Promise<string | null> {
   const ocBackup = await backupFile(openclawPath(configDir));
-  await backupFile(safeclawPath(configDir));
+  await backupFile(clawguardPath(configDir));
   return ocBackup;
 }
 
@@ -218,11 +218,11 @@ export async function restoreConfig(
   // Restore OpenClaw config
   await copyFile(backupPath, openclawPath(configDir));
 
-  // Try to restore matching SafeClaw backup
-  const safeclawBackup = backupFilename.replace("openclaw-", "safeclaw-");
-  const safeclawBackupPath = join(backupDir, safeclawBackup);
-  if (existsSync(safeclawBackupPath)) {
-    await copyFile(safeclawBackupPath, safeclawPath(configDir));
+  // Try to restore matching ClawGuard backup
+  const clawguardBackup = backupFilename.replace("openclaw-", "clawguard-");
+  const clawguardBackupPath = join(backupDir, clawguardBackup);
+  if (existsSync(clawguardBackupPath)) {
+    await copyFile(clawguardBackupPath, clawguardPath(configDir));
   }
 }
 

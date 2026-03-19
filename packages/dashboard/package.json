@@ -1,5 +1,5 @@
 {
-  "name": "@safeclaw/dashboard",
+  "name": "@clawguard/dashboard",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -9,8 +9,8 @@
     "preview": "node dist/server/server.js"
   },
   "dependencies": {
-    "@safeclaw/config-engine": "*",
-    "@safeclaw/skill-scanner": "*",
+    "@clawguard/config-engine": "*",
+    "@clawguard/skill-scanner": "*",
     "dotenv": "^17.3.1",
     "express": "^5.1.0",
     "helmet": "^8.1.0",

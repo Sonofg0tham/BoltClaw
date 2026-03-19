@@ -1,6 +1,6 @@
 export {
   type OpenClawConfig,
-  type SafeClawConfig,
+  type ClawGuardConfig,
   type CombinedConfig,
   type PermissionLevel,
   type SecuritySettingKey,
@@ -28,8 +28,8 @@ export { scoreConfig, type ScoreResult, type Finding } from "./scorer.js";
 export { PROFILES, type SecurityProfile } from "./profiles.js";
 
 export {
-  applySafeClawToOpenClaw,
-  inferSafeClawFromOpenClaw,
+  applyClawGuardToOpenClaw,
+  inferClawGuardFromOpenClaw,
   sandboxModeToLabel,
   sandboxModeSeverity,
 } from "./mapper.js";

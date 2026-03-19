@@ -1,12 +1,12 @@
 services:
   openclaw:
     image: ghcr.io/openclaw/openclaw:latest
-    container_name: safeclaw-openclaw
+    container_name: clawguard-openclaw
     volumes:
       - ./openclaw-defaults/openclaw.json:/home/node/.openclaw/openclaw.json
       - openclaw-data:/home/node/.openclaw/skills
     networks:
-      - safeclaw-net
+      - clawguard-net
     read_only: true
     tmpfs:
       - /tmp
@@ -22,11 +22,11 @@ services:
 
   ollama:
     image: ollama/ollama:latest
-    container_name: safeclaw-ollama
+    container_name: clawguard-ollama
     volumes:
       - ollama-models:/root/.ollama
     networks:
-      - safeclaw-net
+      - clawguard-net
     ports:
       - "11434:11434"
 
@@ -34,19 +34,19 @@ services:
     build:
       context: ..
       dockerfile: docker/Dockerfile.dashboard
-    container_name: safeclaw-dashboard
+    container_name: clawguard-dashboard
     ports:
       - "3000:3000"
     volumes:
       - ./openclaw-defaults:/config
     networks:
-      - safeclaw-net
+      - clawguard-net
     environment:
       - NODE_ENV=production
       - OPENCLAW_CONFIG_PATH=/config/openclaw.json
 
 networks:
-  safeclaw-net:
+  clawguard-net:
     driver: bridge
 
 volumes:

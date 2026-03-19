@@ -78,9 +78,9 @@ export function SetupWizard() {
     if (!config) return;
     setConfig({
       ...config,
-      safeclaw: {
-        ...config.safeclaw,
-        security: { ...config.safeclaw.security, [key]: value },
+      clawguard: {
+        ...config.clawguard,
+        security: { ...config.clawguard.security, [key]: value },
       },
     });
   }
@@ -89,11 +89,11 @@ export function SetupWizard() {
     if (!config || !allowlistInput.trim()) return;
     setConfig({
       ...config,
-      safeclaw: {
-        ...config.safeclaw,
+      clawguard: {
+        ...config.clawguard,
         messaging: {
-          ...config.safeclaw.messaging,
-          allowlist: [...config.safeclaw.messaging.allowlist, allowlistInput.trim()],
+          ...config.clawguard.messaging,
+          allowlist: [...config.clawguard.messaging.allowlist, allowlistInput.trim()],
         },
       },
     });
@@ -104,11 +104,11 @@ export function SetupWizard() {
     if (!config) return;
     setConfig({
       ...config,
-      safeclaw: {
-        ...config.safeclaw,
+      clawguard: {
+        ...config.clawguard,
         messaging: {
-          ...config.safeclaw.messaging,
-          allowlist: config.safeclaw.messaging.allowlist.filter((i) => i !== item),
+          ...config.clawguard.messaging,
+          allowlist: config.clawguard.messaging.allowlist.filter((i) => i !== item),
         },
       },
     });
@@ -225,9 +225,9 @@ export function SetupWizard() {
               Add
             </button>
           </div>
-          {config.safeclaw.messaging.allowlist.length > 0 ? (
+          {config.clawguard.messaging.allowlist.length > 0 ? (
             <div className="space-y-2 mb-6">
-              {config.safeclaw.messaging.allowlist.map((item) => (
+              {config.clawguard.messaging.allowlist.map((item) => (
                 <div key={item} className="flex items-center justify-between bg-slate-900 border border-slate-700 rounded-lg px-4 py-2">
                   <span className="text-sm font-mono text-slate-300">{item}</span>
                   <button
@@ -270,7 +270,7 @@ export function SetupWizard() {
                 description={meta.description}
                 riskWhenAllowed={meta.riskWhenAllowed}
                 whatBreaksWhenDenied={meta.whatBreaksWhenDenied}
-                value={config.safeclaw.security[meta.key as keyof typeof config.safeclaw.security] || "deny"}
+                value={config.clawguard.security[meta.key as keyof typeof config.clawguard.security] || "deny"}
                 onChange={(v) => updateSecurity(meta.key, v)}
               />
             ))}
@@ -305,9 +305,9 @@ export function SetupWizard() {
               <pre className="text-xs font-mono text-green-400 whitespace-pre-wrap leading-relaxed mb-4">
                 {JSON.stringify(config.openclaw, null, 2)}
               </pre>
-              <h3 className="font-medium text-slate-300 mb-3 text-sm">SafeClaw Settings (safeclaw.json)</h3>
+              <h3 className="font-medium text-slate-300 mb-3 text-sm">ClawGuard Settings (clawguard.json)</h3>
               <pre className="text-xs font-mono text-purple-400 whitespace-pre-wrap leading-relaxed">
-                {JSON.stringify(config.safeclaw, null, 2)}
+                {JSON.stringify(config.clawguard, null, 2)}
               </pre>
             </div>
           </div>

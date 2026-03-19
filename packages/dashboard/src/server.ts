@@ -1,12 +1,12 @@
 import "dotenv/config";
 import express from "express";
 import helmet from "helmet";
-import { readConfig, writeConfig, listBackups, restoreConfig, scoreConfig, PROFILES } from "@safeclaw/config-engine";
-import { scanSkill } from "@safeclaw/skill-scanner";
+import { readConfig, writeConfig, listBackups, restoreConfig, scoreConfig, PROFILES } from "@clawguard/config-engine";
+import { scanSkill } from "@clawguard/skill-scanner";
 import { existsSync } from "node:fs";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join, resolve, normalize, dirname } from "node:path";
+import { join, resolve, normalize, dirname, sep } from "node:path";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { z } from "zod";
@@ -46,7 +46,7 @@ function logEvent(action: AuditEvent["action"], severity: AuditEvent["severity"]
   if (auditLog.length > MAX_AUDIT_EVENTS) auditLog.pop();
 }
 
-const SCAN_ROOT = process.env.SAFECLAW_SCAN_ROOT || undefined;
+const SCAN_ROOT = process.env.CLAWGUARD_SCAN_ROOT || undefined;
 
 // Simple concurrency limiter for scans (prevents DoS via many parallel git clones)
 let activeScans = 0;
@@ -64,7 +64,7 @@ async function fetchGitHubSkill(url: string): Promise<{ tmpDir: string; scanPath
   const branch = match[2] || "main";
   const subPath = match[3] || "";
 
-  const tmpDir = await mkdtemp(join(tmpdir(), "safeclaw-scan-"));
+  const tmpDir = await mkdtemp(join(tmpdir(), "clawguard-scan-"));
 
   try {
     await execFileAsync("git", [
@@ -81,7 +81,7 @@ async function fetchGitHubSkill(url: string): Promise<{ tmpDir: string; scanPath
   // Prevent path traversal via ../ in the GitHub URL subpath
   const resolvedScan = resolve(scanPath);
   const resolvedTmp = resolve(tmpDir);
-  if (!resolvedScan.startsWith(resolvedTmp + "/") && resolvedScan !== resolvedTmp) {
+  if (!resolvedScan.startsWith(resolvedTmp + sep) && resolvedScan !== resolvedTmp) {
     await rm(tmpDir, { recursive: true, force: true });
     throw new Error("Invalid subpath: directory traversal not allowed");
   }
@@ -139,7 +139,7 @@ const CombinedConfigSchema = z.object({
       allowBundled: z.array(z.string()).optional(),
     }).optional(),
   }).passthrough(), // Allow unknown keys OpenClaw may have
-  safeclaw: z.object({
+  clawguard: z.object({
     security: z.object({
       shell: PermissionLevelSchema,
       filesystem: PermissionLevelSchema,
@@ -197,7 +197,7 @@ app.post("/api/config", async (req, res) => {
   try {
     await writeConfig(parsed.data, CONFIG_DIR);
     const score = scoreConfig(parsed.data);
-    logEvent("config_write", "warning", "Configuration updated", { keys: Object.keys(parsed.data.safeclaw.security) });
+    logEvent("config_write", "warning", "Configuration updated", { keys: Object.keys(parsed.data.clawguard.security) });
     res.json({ success: true, score });
   } catch (err) {
     console.error("Failed to write config:", err);
@@ -270,7 +270,7 @@ app.post("/api/scan", async (req, res) => {
     if (SCAN_ROOT) {
       const resolved = resolve(normalize(skillPath));
       const root = resolve(normalize(SCAN_ROOT));
-      if (!resolved.startsWith(root + "/") && resolved !== root) {
+      if (!resolved.startsWith(root + sep) && resolved !== root) {
         activeScans--;
         res.status(400).json({ error: "Scan path is outside the allowed directory" });
         return;
@@ -324,5 +324,5 @@ if (existsSync(clientDist)) {
 }
 
 app.listen(PORT, () => {
-  console.log(`SafeClaw dashboard running on http://localhost:${PORT}`);
+  console.log(`ClawGuard dashboard running on http://localhost:${PORT}`);
 });

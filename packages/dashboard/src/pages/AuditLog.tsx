@@ -124,7 +124,7 @@ export function AuditLog() {
           </p>
           <p className="text-sm text-slate-500 mt-1">
             {events.length === 0
-              ? "Events will appear here as you use SafeClaw — try scanning a skill or changing config."
+              ? "Events will appear here as you use ClawGuard — try scanning a skill or changing config."
               : "Try adjusting your filters or search."}
           </p>
         </div>

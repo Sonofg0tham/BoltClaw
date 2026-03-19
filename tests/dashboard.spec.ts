@@ -3,7 +3,7 @@ import { test, expect } from "@playwright/test";
 test.describe("Dashboard loads", () => {
   test("serves the frontend", async ({ page }) => {
     await page.goto("/");
-    await expect(page.locator("header")).toContainText("SafeClaw");
+    await expect(page.locator("header")).toContainText("ClawGuard");
   });
 
   test("shows all four navigation tabs", async ({ page }) => {

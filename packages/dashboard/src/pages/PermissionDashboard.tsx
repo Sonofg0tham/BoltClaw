@@ -104,7 +104,7 @@ export function PermissionDashboard() {
   async function quickFix(key: string) {
     if (!data) return;
     const updated = structuredClone(data.config);
-    updated.safeclaw.security[key as keyof typeof updated.safeclaw.security] = "deny";
+    updated.clawguard.security[key as keyof typeof updated.clawguard.security] = "deny";
     try {
       const res = await fetch("/api/config", {
         method: "POST",
@@ -186,10 +186,10 @@ export function PermissionDashboard() {
   }
 
   const securityCards: PermissionCard[] = [
-    { key: "shell", label: "Shell", value: data.config.safeclaw.security.shell, secureDefault: "deny" },
-    { key: "filesystem", label: "Filesystem", value: data.config.safeclaw.security.filesystem, secureDefault: "deny" },
-    { key: "browser", label: "Browser", value: data.config.safeclaw.security.browser, secureDefault: "deny" },
-    { key: "network", label: "Network", value: data.config.safeclaw.security.network, secureDefault: "deny" },
+    { key: "shell", label: "Shell", value: data.config.clawguard.security.shell, secureDefault: "deny" },
+    { key: "filesystem", label: "Filesystem", value: data.config.clawguard.security.filesystem, secureDefault: "deny" },
+    { key: "browser", label: "Browser", value: data.config.clawguard.security.browser, secureDefault: "deny" },
+    { key: "network", label: "Network", value: data.config.clawguard.security.network, secureDefault: "deny" },
   ];
 
   const sandboxMode = data.config.openclaw.agents?.defaults?.sandbox?.mode;

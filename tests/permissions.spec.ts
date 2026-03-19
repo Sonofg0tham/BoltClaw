@@ -25,7 +25,7 @@ test.describe("Permission Dashboard", () => {
     const body = await res.json();
     expect(body.config).toBeDefined();
     expect(body.config.openclaw).toBeDefined();
-    expect(body.config.safeclaw).toBeDefined();
+    expect(body.config.clawguard).toBeDefined();
     expect(body.score).toBeDefined();
     expect(body.score.score).toBeGreaterThanOrEqual(0);
     expect(body.score.score).toBeLessThanOrEqual(100);
@@ -50,6 +50,6 @@ test.describe("Permission Dashboard", () => {
     expect(config2.openclaw.agents).toEqual(config.openclaw.agents);
     expect(config2.openclaw.gateway.mode).toBe(config.openclaw.gateway.mode);
     expect(config2.openclaw.gateway.bind).toBe(config.openclaw.gateway.bind);
-    expect(config2.safeclaw.security).toEqual(config.safeclaw.security);
+    expect(config2.clawguard.security).toEqual(config.clawguard.security);
   });
 });

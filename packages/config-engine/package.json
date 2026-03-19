@@ -1,5 +1,5 @@
 {
-  "name": "@safeclaw/config-engine",
+  "name": "@clawguard/config-engine",
   "version": "0.1.0",
   "private": true,
   "type": "module",

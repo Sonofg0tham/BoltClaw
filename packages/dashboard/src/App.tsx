@@ -24,9 +24,10 @@ export function App() {
           <div className="flex items-center gap-2">
             <span className="text-xl">🛡️</span>
             <span className="font-bold text-lg tracking-tight">
-              Safe<span className="text-green-400">Claw</span>
+              Claw<span className="text-green-400">Guard</span>
             </span>
             <span className="text-xs text-slate-500 ml-2 font-mono">v0.1</span>
+            <span className="text-xs text-slate-600 ml-3 hidden sm:inline">Security control panel for AI agents</span>
           </div>
           <nav className="flex gap-1">
             {TABS.map((t) => (
@@ -57,7 +58,7 @@ export function App() {
 
       {/* Footer */}
       <footer className="border-t border-slate-800 py-4 text-center text-xs text-slate-600">
-        SafeClaw — Security-first configuration for OpenClaw
+        ClawGuard — Security control panel for AI agents
       </footer>
     </div>
   );

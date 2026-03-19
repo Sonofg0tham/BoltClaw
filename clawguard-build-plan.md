@@ -1,4 +1,4 @@
-# SafeClaw — Build Plan
+# ClawGuard — Build Plan
 ## A Security-First Configuration Wrapper for OpenClaw
 
 ### What You're Building
@@ -11,9 +11,9 @@ A local web dashboard that wraps OpenClaw's setup and configuration process, enf
 | Tool | Purpose | Cost |
 |------|---------|------|
 | **Docker Desktop** | Run OpenClaw in an isolated container | Free (you have it) |
-| **Claude Code** | Build SafeClaw (CLI + web UI) | Free with Claude Pro |
+| **Claude Code** | Build ClawGuard (CLI + web UI) | Free with Claude Pro |
 | **Ollama** | Run a local LLM for OpenClaw testing | Free |
-| **Node.js** | SafeClaw is a Node app (OpenClaw is Node-based too) | Free |
+| **Node.js** | ClawGuard is a Node app (OpenClaw is Node-based too) | Free |
 | **GitHub** | Version control + portfolio visibility | Free |
 | **Gemini Flash Lite** | Swap in later for smarter testing | ~$0.01-0.05/session |
 | **Vercel** | Optional: host a project landing page | Free tier |
@@ -33,7 +33,7 @@ claude mcp add --transport stdio github -- npx -y @modelcontextprotocol/server-g
 # You'll need a GitHub Personal Access Token (free)
 
 # 2. Filesystem MCP — let Claude Code read your project + OpenClaw docs
-claude mcp add --transport stdio filesystem -- npx -y @modelcontextprotocol/server-filesystem /path/to/your/safeclaw-project
+claude mcp add --transport stdio filesystem -- npx -y @modelcontextprotocol/server-filesystem /path/to/your/clawguard-project
 
 # 3. Docker MCP (via Docker MCP Toolkit) — interact with containers from Claude Code
 # Install from Docker Desktop > Settings > MCP Toolkit (one-click)
@@ -74,13 +74,13 @@ claude mcp add --transport stdio playwright -- npx -y @anthropic/mcp-playwright
 
 ### Your CLAUDE.md File (Critical)
 
-Create this at the root of your SafeClaw project. It tells Claude Code how to behave:
+Create this at the root of your ClawGuard project. It tells Claude Code how to behave:
 
 ```markdown
-# SafeClaw Project Context
+# ClawGuard Project Context
 
 ## What this is
-SafeClaw is a security-first configuration wrapper for OpenClaw (openclaw.ai).
+ClawGuard is a security-first configuration wrapper for OpenClaw (openclaw.ai).
 It provides a local web dashboard that enforces secure defaults and scans
 skills before installation.
 
@@ -92,7 +92,7 @@ skills before installation.
 - No cloud dependencies for core functionality
 
 ## Architecture Principles
-- SafeClaw NEVER requires more permissions than OpenClaw itself
+- ClawGuard NEVER requires more permissions than OpenClaw itself
 - All config changes are reversible (maintain backups)
 - Default to most restrictive settings, let user opt in
 - Scan all skills BEFORE they touch the OpenClaw runtime
@@ -114,7 +114,7 @@ skills before installation.
 │                  YOUR MACHINE                    │
 │                                                  │
 │  ┌──────────────────────────────────────────┐   │
-│  │           SafeClaw Dashboard              │   │
+│  │           ClawGuard Dashboard              │   │
 │  │         (localhost:3000)                   │   │
 │  │                                           │   │
 │  │  ┌─────────┐ ┌──────────┐ ┌───────────┐ │   │
@@ -123,7 +123,7 @@ skills before installation.
 │  │  └────┬────┘ └────┬─────┘ └─────┬─────┘ │   │
 │  │       │           │              │        │   │
 │  │  ┌────▼───────────▼──────────────▼─────┐ │   │
-│  │  │        SafeClaw Config Engine        │ │   │
+│  │  │        ClawGuard Config Engine        │ │   │
 │  │  │   (reads/writes openclaw.json)       │ │   │
 │  │  └────────────────┬────────────────────┘ │   │
 │  └───────────────────│──────────────────────┘   │
@@ -146,16 +146,16 @@ skills before installation.
 
 ### Week 1: Foundation & Docker Sandbox
 
-**Goal:** OpenClaw running in Docker, SafeClaw project scaffolded.
+**Goal:** OpenClaw running in Docker, ClawGuard project scaffolded.
 
 **Tasks:**
-1. Create GitHub repo for SafeClaw
+1. Create GitHub repo for ClawGuard
 2. Write a Dockerfile that runs OpenClaw in a locked-down container:
    - No host network access (use bridge network)
    - Read-only filesystem where possible
    - No shell access by default
    - Ollama running alongside for free LLM testing
-3. Scaffold SafeClaw as a Node.js + React project using Claude Code
+3. Scaffold ClawGuard as a Node.js + React project using Claude Code
 4. Build the Config Engine — a module that can:
    - Read ~/.openclaw/openclaw.json
    - Parse and understand every security-relevant setting
@@ -163,7 +163,7 @@ skills before installation.
 
 **Claude Code prompt to kick things off:**
 ```
-Create a new Node.js project called "safeclaw" with a React frontend.
+Create a new Node.js project called "clawguard" with a React frontend.
 The backend should be able to read and write OpenClaw configuration
 files (openclaw.json format). Start with a module that parses the
 config and identifies all security-relevant settings. Use TypeScript.
@@ -250,7 +250,7 @@ config and identifies all security-relevant settings. Use TypeScript.
 **Tasks:**
 1. Write a great README with screenshots and a demo GIF
 2. Create a project landing page (deploy to Vercel — free tier)
-3. Write a blog post: "What I Learned About AI Agent Security Building SafeClaw"
+3. Write a blog post: "What I Learned About AI Agent Security Building ClawGuard"
 4. Record a 2-minute demo video
 5. Run Anthropic's /security-review on your own code
 6. Open-source it with a clear LICENSE
@@ -260,7 +260,7 @@ config and identifies all security-relevant settings. Use TypeScript.
 ## Folder Structure
 
 ```
-safeclaw/
+clawguard/
 ├── docker/
 │   ├── Dockerfile            # Hardened OpenClaw container
 │   └── docker-compose.yml    # OpenClaw + Ollama orchestration
@@ -319,9 +319,9 @@ safeclaw/
 
 ## Portfolio Positioning
 
-When presenting SafeClaw in job applications, frame it as:
+When presenting ClawGuard in job applications, frame it as:
 
-> "I built SafeClaw after studying how 40,000+ OpenClaw instances were
+> "I built ClawGuard after studying how 40,000+ OpenClaw instances were
 > exposed due to insecure defaults. It's a security-first configuration
 > wrapper that enforces least-privilege by default, scans community skills
 > for prompt injection and data exfiltration patterns, and gives users
