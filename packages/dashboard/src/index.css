@@ -2,21 +2,225 @@
 @tailwind components;
 @tailwind utilities;
 
-body {
-  min-height: 100vh;
+/* ─── Base ─────────────────────────────────────────────── */
+@layer base {
+  :root {
+    --claw-red:      #dc2626;
+    --claw-red-dim:  rgba(220, 38, 38, 0.12);
+    --claw-red-glow: rgba(220, 38, 38, 0.35);
+    --bg-base:       #070c14;
+    --bg-surface:    #0d1526;
+    --bg-card:       #111827;
+    --border-subtle: rgba(255, 255, 255, 0.06);
+    --border-dim:    rgba(255, 255, 255, 0.1);
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    min-height: 100vh;
+    background: var(--bg-base);
+    background-image:
+      radial-gradient(ellipse 80% 50% at 10% 0%, rgba(220, 38, 38, 0.06) 0%, transparent 60%),
+      radial-gradient(ellipse 60% 40% at 90% 100%, rgba(139, 0, 0, 0.04) 0%, transparent 60%);
+    color: #e2e8f0;
+    font-family: 'Inter', system-ui, sans-serif;
+  }
 }
 
-/* Scrollbar styling for dark theme */
-::-webkit-scrollbar {
-  width: 8px;
+/* ─── Scrollbar ─────────────────────────────────────────── */
+::-webkit-scrollbar          { width: 6px; height: 6px; }
+::-webkit-scrollbar-track    { background: #070c14; }
+::-webkit-scrollbar-thumb    { background: #1e293b; border-radius: 99px; }
+::-webkit-scrollbar-thumb:hover { background: #334155; }
+
+/* ─── Glassmorphism cards ───────────────────────────────── */
+@layer components {
+  .glass-card {
+    background: rgba(17, 24, 39, 0.7);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--border-subtle);
+    border-radius: 16px;
+  }
+
+  .glass-card-red {
+    background: rgba(127, 29, 29, 0.12);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(220, 38, 38, 0.25);
+    border-radius: 16px;
+  }
+
+  /* ─── Navigation tab ──────────────────────────────────── */
+  .nav-tab {
+    @apply relative flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200;
+    color: #64748b;
+  }
+
+  .nav-tab:hover {
+    color: #94a3b8;
+    background: rgba(255, 255, 255, 0.04);
+  }
+
+  .nav-tab.active {
+    color: #f1f5f9;
+    background: rgba(220, 38, 38, 0.15);
+    border: 1px solid rgba(220, 38, 38, 0.3);
+  }
+
+  .nav-tab.active::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 60%;
+    height: 2px;
+    background: var(--claw-red);
+    border-radius: 2px 2px 0 0;
+    box-shadow: 0 0 8px var(--claw-red-glow);
+  }
+
+  /* ─── Buttons ─────────────────────────────────────────── */
+  .btn-primary {
+    @apply inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200;
+    background: linear-gradient(135deg, #dc2626, #991b1b);
+    color: #fff;
+    border: 1px solid rgba(220, 38, 38, 0.5);
+    box-shadow: 0 4px 14px rgba(220, 38, 38, 0.3), inset 0 1px 0 rgba(255,255,255,0.1);
+  }
+  .btn-primary:hover {
+    background: linear-gradient(135deg, #ef4444, #b91c1c);
+    box-shadow: 0 6px 20px rgba(220, 38, 38, 0.45);
+    transform: translateY(-1px);
+  }
+  .btn-primary:active  { transform: translateY(0); }
+  .btn-primary:disabled { opacity: 0.45; cursor: not-allowed; transform: none; box-shadow: none; }
+
+  .btn-ghost {
+    @apply inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200;
+    color: #94a3b8;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.03);
+  }
+  .btn-ghost:hover {
+    color: #e2e8f0;
+    background: rgba(255, 255, 255, 0.07);
+    border-color: rgba(255, 255, 255, 0.14);
+  }
+
+  .btn-success {
+    @apply inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200;
+    background: rgba(22, 101, 52, 0.4);
+    color: #4ade80;
+    border: 1px solid rgba(74, 222, 128, 0.25);
+  }
+  .btn-success:hover {
+    background: rgba(22, 101, 52, 0.6);
+    border-color: rgba(74, 222, 128, 0.4);
+  }
+
+  /* ─── Form inputs ─────────────────────────────────────── */
+  .input-dark {
+    @apply w-full rounded-xl px-4 py-3 text-sm font-mono transition-all duration-200;
+    background: rgba(7, 12, 20, 0.8);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #e2e8f0;
+    outline: none;
+  }
+  .input-dark::placeholder { color: #334155; }
+  .input-dark:focus {
+    border-color: rgba(220, 38, 38, 0.5);
+    box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.12);
+  }
+
+  /* ─── Section headings ────────────────────────────────── */
+  .section-heading {
+    @apply text-lg font-bold mb-4;
+    color: #f1f5f9;
+    letter-spacing: -0.01em;
+  }
+
+  /* ─── Risk bar ────────────────────────────────────────── */
+  .risk-bar-track {
+    height: 6px;
+    background: rgba(255,255,255,0.06);
+    border-radius: 99px;
+    overflow: hidden;
+  }
+
+  /* ─── Scan result pre ─────────────────────────────────── */
+  .code-block {
+    @apply text-xs font-mono rounded-xl p-3 overflow-x-auto;
+    background: rgba(7, 12, 20, 0.9);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    color: #f87171;
+    line-height: 1.6;
+  }
 }
-::-webkit-scrollbar-track {
-  background: #0f172a;
+
+/* ─── Glow effects ──────────────────────────────────────── */
+.glow-red   { box-shadow: 0 0 20px rgba(220, 38, 38, 0.3); }
+.glow-green { box-shadow: 0 0 20px rgba(74, 222, 128, 0.2); }
+
+/* ─── Animated scan line (for Skill Scanner) ────────────── */
+.scan-overlay {
+  position: relative;
+  overflow: hidden;
 }
-::-webkit-scrollbar-thumb {
-  background: #334155;
-  border-radius: 4px;
+.scan-overlay::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(220,38,38,0.6), transparent);
+  animation: scan-line 1.8s linear infinite;
+  pointer-events: none;
 }
-::-webkit-scrollbar-thumb:hover {
-  background: #475569;
+
+@keyframes scan-line {
+  0%   { top: 0; }
+  100% { top: 100%; }
+}
+
+/* ─── Step indicator connector ──────────────────────────── */
+.step-connector {
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, #1e293b, #334155);
+  margin: 0 4px;
+}
+.step-connector.done {
+  background: linear-gradient(90deg, rgba(220,38,38,0.6), rgba(220,38,38,0.3));
+}
+
+/* ─── Backdrop noise texture overlay ────────────────────── */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.4;
+}
+
+#root { position: relative; z-index: 1; }
+
+/* ─── Permission card hover lift ────────────────────────── */
+.perm-card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.perm-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.3);
 }

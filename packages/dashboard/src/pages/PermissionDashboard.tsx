@@ -12,39 +12,59 @@ interface ConfigResponse {
 interface PermissionCard {
   key: string;
   label: string;
+  icon: string;
   value: PermissionLevel;
   secureDefault: PermissionLevel;
 }
 
 function permissionSeverity(value: PermissionLevel): Severity {
-  if (value === "deny") return "safe";
-  if (value === "ask") return "caution";
+  if (value === "deny")  return "safe";
+  if (value === "ask")   return "caution";
   return "danger";
 }
 
-function cardColor(value: PermissionLevel): string {
-  if (value === "deny") return "border-green-700 bg-green-950/30";
-  if (value === "ask") return "border-yellow-700 bg-yellow-950/30";
-  return "border-red-700 bg-red-950/30";
+function cardBorderColor(value: PermissionLevel): string {
+  if (value === "deny")  return "rgba(74,222,128,0.2)";
+  if (value === "ask")   return "rgba(251,191,36,0.2)";
+  return "rgba(239,68,68,0.25)";
+}
+
+function cardBg(value: PermissionLevel): string {
+  if (value === "deny")  return "rgba(20,83,45,0.15)";
+  if (value === "ask")   return "rgba(113,63,18,0.15)";
+  return "rgba(127,29,29,0.18)";
 }
 
 function sandboxSeverity(mode: SandboxMode | undefined): Severity {
-  if (mode === "all") return "safe";
+  if (mode === "all")      return "safe";
   if (mode === "non-main") return "caution";
   return "danger";
 }
 
-function sandboxColor(mode: SandboxMode | undefined): string {
-  if (mode === "all") return "border-green-700 bg-green-950/30";
-  if (mode === "non-main") return "border-yellow-700 bg-yellow-950/30";
-  return "border-red-700 bg-red-950/30";
+function sandboxBg(mode: SandboxMode | undefined): string {
+  if (mode === "all")      return cardBg("deny");
+  if (mode === "non-main") return cardBg("ask");
+  return cardBg("allow");
+}
+
+function sandboxBorder(mode: SandboxMode | undefined): string {
+  if (mode === "all")      return cardBorderColor("deny");
+  if (mode === "non-main") return cardBorderColor("ask");
+  return cardBorderColor("allow");
 }
 
 function sandboxLabel(mode: SandboxMode | undefined): string {
-  if (mode === "all") return "all agents";
+  if (mode === "all")      return "all agents";
   if (mode === "non-main") return "non-main only";
   return "disabled";
 }
+
+const PERM_ICONS: Record<string, string> = {
+  shell: "💻",
+  filesystem: "📁",
+  browser: "🌐",
+  network: "📡",
+};
 
 export function PermissionDashboard() {
   const [data, setData] = useState<ConfigResponse | null>(null);
@@ -134,7 +154,7 @@ export function PermissionDashboard() {
       const json = await res.json();
       setData({ config: updated, score: json.score });
     } catch {
-      setError("Quick fix failed. Is the server running?");
+      setError("Quick fix failed.");
     }
   }
 
@@ -142,10 +162,7 @@ export function PermissionDashboard() {
     if (!data) return;
     const updated = structuredClone(data.config);
     if (!updated.openclaw.gateway) updated.openclaw.gateway = { bind: "loopback", mode: "local" };
-    else {
-      updated.openclaw.gateway.bind = "loopback";
-      updated.openclaw.gateway.mode = "local";
-    }
+    else { updated.openclaw.gateway.bind = "loopback"; updated.openclaw.gateway.mode = "local"; }
     try {
       const res = await fetch("/api/config", {
         method: "POST",
@@ -155,7 +172,7 @@ export function PermissionDashboard() {
       const json = await res.json();
       setData({ config: updated, score: json.score });
     } catch {
-      setError("Quick fix failed. Is the server running?");
+      setError("Quick fix failed.");
     }
   }
 
@@ -173,56 +190,78 @@ export function PermissionDashboard() {
       const json = await res.json();
       setData({ config: updated, score: json.score });
     } catch {
-      setError("Quick fix failed. Is the server running?");
+      setError("Quick fix failed.");
     }
   }
 
   if (loading) {
-    return <div className="flex items-center justify-center py-24 text-slate-500">Loading configuration...</div>;
+    return (
+      <div className="flex flex-col items-center justify-center py-32">
+        <div
+          className="w-12 h-12 rounded-full border-2 animate-spin mb-4"
+          style={{ borderColor: "rgba(220,38,38,0.2)", borderTopColor: "#dc2626" }}
+        />
+        <p className="text-slate-500 text-sm">Loading configuration…</p>
+      </div>
+    );
   }
 
   if (!data) {
-    return <div className="flex items-center justify-center py-24 text-red-400">Failed to load configuration</div>;
+    return (
+      <div className="flex items-center justify-center py-24">
+        <p style={{ color: "#f87171" }}>Failed to load configuration</p>
+      </div>
+    );
   }
 
   const securityCards: PermissionCard[] = [
-    { key: "shell", label: "Shell", value: data.config.clawguard.security.shell, secureDefault: "deny" },
-    { key: "filesystem", label: "Filesystem", value: data.config.clawguard.security.filesystem, secureDefault: "deny" },
-    { key: "browser", label: "Browser", value: data.config.clawguard.security.browser, secureDefault: "deny" },
-    { key: "network", label: "Network", value: data.config.clawguard.security.network, secureDefault: "deny" },
+    { key: "shell",      label: "Shell",      icon: PERM_ICONS.shell,      value: data.config.clawguard.security.shell,      secureDefault: "deny" },
+    { key: "filesystem", label: "Filesystem", icon: PERM_ICONS.filesystem, value: data.config.clawguard.security.filesystem, secureDefault: "deny" },
+    { key: "browser",    label: "Browser",    icon: PERM_ICONS.browser,    value: data.config.clawguard.security.browser,    secureDefault: "deny" },
+    { key: "network",    label: "Network",    icon: PERM_ICONS.network,    value: data.config.clawguard.security.network,     secureDefault: "deny" },
   ];
 
-  const sandboxMode = data.config.openclaw.agents?.defaults?.sandbox?.mode;
-  const gatewayBind = data.config.openclaw.gateway?.bind;
+  const sandboxMode  = data.config.openclaw.agents?.defaults?.sandbox?.mode;
+  const gatewayBind  = data.config.openclaw.gateway?.bind;
   const allowBundled = data.config.openclaw.skills?.allowBundled || [];
 
   return (
-    <div>
+    <div className="animate-fade-in">
       {error && <ErrorBanner message={error} onDismiss={() => setError(null)} />}
 
-      {/* Top: Score gauge */}
-      <div className="flex flex-col items-center mb-10">
+      {/* ─── Score hero ─────────────────────────────────── */}
+      <div className="flex flex-col items-center mb-12">
         <SecurityScore score={data.score.score} grade={data.score.grade} size="lg" />
-        <p className="mt-3 text-sm text-slate-400">Overall Security Score</p>
+        <p className="mt-4 text-sm text-slate-500 font-mono tracking-wide uppercase" style={{ letterSpacing: "0.1em" }}>
+          Overall Security Score
+        </p>
       </div>
 
-      {/* Permission Grid */}
-      <h3 className="text-lg font-bold text-slate-100 mb-4">Permission Status</h3>
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+      {/* ─── Permission grid ────────────────────────────── */}
+      <h3 className="section-heading flex items-center gap-2">
+        <span
+          className="inline-block w-1 h-5 rounded-full"
+          style={{ background: "linear-gradient(180deg, #dc2626, #7f1d1d)" }}
+        />
+        Permission Status
+      </h3>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
         {securityCards.map((card) => (
           <div
             key={card.key}
-            className={`rounded-xl border p-5 transition-all ${cardColor(card.value)}`}
+            className="perm-card rounded-2xl p-5"
+            style={{ background: cardBg(card.value), border: `1px solid ${cardBorderColor(card.value)}` }}
           >
-            <div className="flex items-center justify-between mb-2">
-              <span className="font-medium text-slate-200">{card.label}</span>
+            <span className="text-2xl mb-3 block">{card.icon}</span>
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="font-semibold text-slate-200 text-sm">{card.label}</span>
               <RiskBadge severity={permissionSeverity(card.value)} />
             </div>
-            <div className="font-mono text-sm text-slate-400 mb-3 capitalize">{card.value}</div>
+            <div className="font-mono text-xs mb-3 capitalize" style={{ color: "#64748b" }}>{card.value}</div>
             {card.value !== card.secureDefault && (
               <button
                 onClick={() => quickFix(card.key)}
-                className="w-full py-1.5 bg-green-800/50 hover:bg-green-700/50 border border-green-700 text-green-400 rounded-lg text-xs font-medium transition-colors"
+                className="btn-success w-full justify-center text-xs py-1.5"
               >
                 Quick Fix → {card.secureDefault}
               </button>
@@ -231,64 +270,95 @@ export function PermissionDashboard() {
         ))}
       </div>
 
-      {/* OpenClaw Settings */}
-      <h3 className="text-lg font-bold text-slate-100 mb-4">OpenClaw Settings</h3>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+      {/* ─── OpenClaw settings ──────────────────────────── */}
+      <h3 className="section-heading flex items-center gap-2">
+        <span
+          className="inline-block w-1 h-5 rounded-full"
+          style={{ background: "linear-gradient(180deg, #dc2626, #7f1d1d)" }}
+        />
+        OpenClaw Settings
+      </h3>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10">
         {/* Sandbox Mode */}
-        <div className={`rounded-xl border p-5 ${sandboxColor(sandboxMode)}`}>
-          <div className="flex items-center justify-between mb-2">
-            <span className="font-medium text-slate-200">Sandbox</span>
+        <div
+          className="perm-card rounded-2xl p-5"
+          style={{ background: sandboxBg(sandboxMode), border: `1px solid ${sandboxBorder(sandboxMode)}` }}
+        >
+          <div className="flex items-center justify-between mb-1.5">
+            <span className="font-semibold text-slate-200 text-sm">Sandbox Mode</span>
             <RiskBadge severity={sandboxSeverity(sandboxMode)} />
           </div>
-          <div className="font-mono text-sm text-slate-400 mb-3">{sandboxLabel(sandboxMode)}</div>
+          <div className="font-mono text-xs mb-3" style={{ color: "#64748b" }}>{sandboxLabel(sandboxMode)}</div>
           {sandboxMode !== "all" && (
-            <button onClick={quickFixSandbox} className="w-full py-1.5 bg-green-800/50 hover:bg-green-700/50 border border-green-700 text-green-400 rounded-lg text-xs font-medium transition-colors">
+            <button onClick={quickFixSandbox} className="btn-success w-full justify-center text-xs py-1.5">
               Quick Fix → all
             </button>
           )}
         </div>
 
         {/* Gateway Bind */}
-        <div className={`rounded-xl border p-5 ${gatewayBind && gatewayBind !== "loopback" ? "border-red-700 bg-red-950/30" : "border-green-700 bg-green-950/30"}`}>
-          <div className="flex items-center justify-between mb-2">
-            <span className="font-medium text-slate-200">Gateway Bind</span>
+        <div
+          className="perm-card rounded-2xl p-5"
+          style={{
+            background: gatewayBind && gatewayBind !== "loopback" ? cardBg("allow") : cardBg("deny"),
+            border:     `1px solid ${gatewayBind && gatewayBind !== "loopback" ? cardBorderColor("allow") : cardBorderColor("deny")}`,
+          }}
+        >
+          <div className="flex items-center justify-between mb-1.5">
+            <span className="font-semibold text-slate-200 text-sm">Gateway Bind</span>
             <RiskBadge severity={gatewayBind && gatewayBind !== "loopback" ? "danger" : "safe"} />
           </div>
-          <div className="font-mono text-sm text-slate-400 mb-3">{gatewayBind || "loopback"}</div>
+          <div className="font-mono text-xs mb-3" style={{ color: "#64748b" }}>{gatewayBind || "loopback"}</div>
           {gatewayBind && gatewayBind !== "loopback" && (
-            <button onClick={quickFixGateway} className="w-full py-1.5 bg-green-800/50 hover:bg-green-700/50 border border-green-700 text-green-400 rounded-lg text-xs font-medium transition-colors">
+            <button onClick={quickFixGateway} className="btn-success w-full justify-center text-xs py-1.5">
               Quick Fix → loopback
             </button>
           )}
         </div>
 
         {/* Bundled Skills */}
-        <div className={`rounded-xl border p-5 ${allowBundled.length > 0 ? "border-yellow-700 bg-yellow-950/30" : "border-green-700 bg-green-950/30"}`}>
-          <div className="flex items-center justify-between mb-2">
-            <span className="font-medium text-slate-200">Bundled Skills</span>
+        <div
+          className="perm-card rounded-2xl p-5"
+          style={{
+            background: allowBundled.length > 0 ? cardBg("ask") : cardBg("deny"),
+            border:     `1px solid ${allowBundled.length > 0 ? cardBorderColor("ask") : cardBorderColor("deny")}`,
+          }}
+        >
+          <div className="flex items-center justify-between mb-1.5">
+            <span className="font-semibold text-slate-200 text-sm">Bundled Skills</span>
             <RiskBadge severity={allowBundled.length > 0 ? "caution" : "safe"} />
           </div>
-          <div className="font-mono text-sm text-slate-400 mb-3">
+          <div className="font-mono text-xs mb-3" style={{ color: "#64748b" }}>
             {allowBundled.length === 0 ? "none" : allowBundled.includes("*") ? "all enabled" : `${allowBundled.length} enabled`}
           </div>
           {allowBundled.length > 0 && (
-            <button onClick={quickFixSkills} className="w-full py-1.5 bg-green-800/50 hover:bg-green-700/50 border border-green-700 text-green-400 rounded-lg text-xs font-medium transition-colors">
+            <button onClick={quickFixSkills} className="btn-success w-full justify-center text-xs py-1.5">
               Quick Fix → none
             </button>
           )}
         </div>
       </div>
 
-      {/* Findings */}
+      {/* ─── Findings ───────────────────────────────────── */}
       {data.score.findings.length > 0 && (
-        <div>
-          <h3 className="text-lg font-bold text-slate-100 mb-4">Findings</h3>
+        <div className="mb-8">
+          <h3 className="section-heading flex items-center gap-2">
+            <span
+              className="inline-block w-1 h-5 rounded-full"
+              style={{ background: "linear-gradient(180deg, #dc2626, #7f1d1d)" }}
+            />
+            Findings
+          </h3>
           <div className="space-y-2">
             {data.score.findings.map((f, i) => (
-              <div key={i} className="flex items-start gap-3 bg-slate-900 border border-slate-800 rounded-lg p-3">
+              <div
+                key={i}
+                className="flex items-start gap-3 rounded-xl px-4 py-3"
+                style={{ background: "rgba(7,12,20,0.5)", border: "1px solid rgba(255,255,255,0.06)" }}
+              >
                 <RiskBadge severity={f.severity} />
                 <div>
-                  <span className="text-sm font-mono text-slate-500">{f.setting}</span>
+                  <span className="text-xs font-mono" style={{ color: "#475569" }}>{f.setting}</span>
                   <p className="text-sm text-slate-300">{f.message}</p>
                 </div>
               </div>
@@ -297,51 +367,64 @@ export function PermissionDashboard() {
         </div>
       )}
 
-      {/* Migration Advisor — only shown for scores below 40 (grade D or F) */}
+      {/* ─── Migration Advisor ───────────────────────────── */}
       {data.score.score < 40 && (
-        <div className="mt-8 rounded-xl border border-yellow-700 bg-yellow-950/30 p-6">
-          <h3 className="text-lg font-bold text-yellow-300 mb-2">Migration Advisor</h3>
-          <p className="text-sm text-yellow-200/80 leading-relaxed">
-            Your configuration has critical security gaps that are difficult to fix at the application level.
-            Consider{" "}
+        <div
+          className="rounded-2xl p-6 mb-8"
+          style={{
+            background: "rgba(113,63,18,0.2)",
+            border: "1px solid rgba(251,191,36,0.25)",
+          }}
+        >
+          <h3 className="font-bold mb-2" style={{ color: "#fbbf24" }}>Migration Advisor</h3>
+          <p className="text-sm leading-relaxed" style={{ color: "rgba(253,230,138,0.8)" }}>
+            Your configuration has critical security gaps. Consider{" "}
             <a
               href="https://github.com/qwibitai/nanoclaw"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-yellow-300 underline hover:text-yellow-100"
+              style={{ color: "#fbbf24", textDecoration: "underline" }}
             >
               NanoClaw
             </a>{" "}
-            for OS-level container isolation, or apply the fixes above to improve your current setup.
+            for OS-level container isolation, or apply the Quick Fixes above.
           </p>
         </div>
       )}
 
-      {/* Backups */}
-      <div className="mt-8">
+      {/* ─── Backups ─────────────────────────────────────── */}
+      <div className="mt-4">
         <button
-          onClick={() => { setShowBackups(!showBackups); if (!showBackups) loadBackups(); }}
-          className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 rounded-lg text-sm font-medium transition-colors"
+          onClick={() => {
+            setShowBackups(!showBackups);
+            if (!showBackups) loadBackups();
+          }}
+          className="btn-ghost"
         >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+            <polyline points={showBackups ? "18 15 12 9 6 15" : "6 9 12 15 18 9"} />
+          </svg>
           {showBackups ? "Hide Backups" : "View Backups"}
         </button>
+
         {showBackups && (
-          <div className="mt-4 space-y-2">
+          <div className="mt-4 space-y-2 animate-fade-in">
             {backups.length === 0 ? (
-              <p className="text-sm text-slate-500">No backups found.</p>
+              <p className="text-sm" style={{ color: "#475569" }}>No backups found.</p>
             ) : (
               backups.map((filename) => (
                 <div
                   key={filename}
-                  className="flex items-center justify-between bg-slate-900 border border-slate-800 rounded-lg px-4 py-3"
+                  className="flex items-center justify-between rounded-xl px-4 py-3"
+                  style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)" }}
                 >
                   <span className="text-sm font-mono text-slate-300">{filename}</span>
                   <button
                     onClick={() => restoreBackup(filename)}
                     disabled={restoringBackup === filename}
-                    className="px-3 py-1 bg-green-800/50 hover:bg-green-700/50 border border-green-700 text-green-400 rounded-lg text-xs font-medium transition-colors disabled:opacity-50"
+                    className="btn-success text-xs py-1.5 px-3"
                   >
-                    {restoringBackup === filename ? "Restoring..." : "Restore"}
+                    {restoringBackup === filename ? "Restoring…" : "Restore"}
                   </button>
                 </div>
               ))

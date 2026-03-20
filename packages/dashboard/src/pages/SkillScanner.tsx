@@ -3,10 +3,17 @@ import { RiskBadge } from "../components/RiskBadge.js";
 import type { Severity, ScanResult } from "../types.js";
 
 function riskBarColor(score: number): string {
-  if (score === 0) return "bg-green-500";
-  if (score <= 20) return "bg-yellow-500";
-  if (score <= 50) return "bg-orange-500";
-  return "bg-red-500";
+  if (score === 0)  return "#22c55e";
+  if (score <= 20)  return "#eab308";
+  if (score <= 50)  return "#f97316";
+  return "#ef4444";
+}
+
+function riskBarGlow(score: number): string {
+  if (score === 0)  return "rgba(34,197,94,0.4)";
+  if (score <= 20)  return "rgba(234,179,8,0.4)";
+  if (score <= 50)  return "rgba(249,115,22,0.4)";
+  return "rgba(239,68,68,0.4)";
 }
 
 export function SkillScanner() {
@@ -39,105 +46,187 @@ export function SkillScanner() {
     }
   }
 
-  // Group matches by severity
   const grouped = result
     ? (["danger", "warning", "caution", "safe"] as Severity[])
         .map((sev) => ({
           severity: sev,
-          matches: result.matches.filter((m) => m.pattern.severity === sev),
+          matches:  result.matches.filter((m) => m.pattern.severity === sev),
         }))
         .filter((g) => g.matches.length > 0)
     : [];
 
   return (
-    <div>
-      <h2 className="text-xl font-bold mb-2">Skill Scanner</h2>
-      <p className="text-slate-400 mb-6 text-sm">
-        Scan a skill for security threats before installation. Paste a local path or a GitHub URL.
-        Works with both OpenClaw and NanoClaw skills.
-      </p>
-
-      {/* Input */}
-      <div className="flex gap-2 mb-8">
-        <input
-          type="text"
-          value={path}
-          onChange={(e) => setPath(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && scan()}
-          placeholder="/path/to/skill or https://github.com/user/repo"
-          className="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-sm font-mono text-slate-100 placeholder-slate-600 focus:outline-none focus:border-green-600"
-        />
-        <button
-          onClick={scan}
-          disabled={scanning || !path.trim()}
-          className="px-6 py-3 bg-green-700 hover:bg-green-600 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-colors"
-        >
-          {scanning ? "Scanning..." : "Scan"}
-        </button>
+    <div className="animate-fade-in">
+      {/* ─── Hero header ─────────────────────────────────── */}
+      <div className="mb-8">
+        <h2 className="text-2xl font-bold text-slate-100 mb-1.5">Skill Scanner</h2>
+        <p className="text-slate-500 text-sm">
+          Scan a skill for security threats before installation — paste a local path or GitHub URL.
+          Works with both OpenClaw and NanoClaw skills.
+        </p>
       </div>
 
-      {/* URL format hint */}
-      <p className="text-xs text-slate-600 -mt-6 mb-6">
-        Supports local paths and GitHub URLs (e.g. https://github.com/user/repo or https://github.com/user/repo/tree/main/skills/my-skill)
+      {/* ─── Input area ──────────────────────────────────── */}
+      <div
+        className={`relative rounded-2xl mb-3 overflow-hidden transition-all duration-300 ${scanning ? "scan-overlay" : ""}`}
+        style={{
+          background: "rgba(13,21,38,0.7)",
+          border:     scanning
+            ? "1px solid rgba(220,38,38,0.4)"
+            : "1px solid rgba(255,255,255,0.08)",
+          boxShadow:  scanning ? "0 0 24px rgba(220,38,38,0.15)" : "none",
+        }}
+      >
+        <div className="flex items-center gap-3 px-4 py-1">
+          {/* Icon */}
+          <svg
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke={scanning ? "#dc2626" : "#475569"}
+            strokeWidth="2"
+            strokeLinecap="round"
+            className="shrink-0 transition-colors duration-300"
+          >
+            <circle cx="11" cy="11" r="8"/>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
+
+          <input
+            id="skill-path-input"
+            type="text"
+            value={path}
+            onChange={(e) => setPath(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && scan()}
+            placeholder="/path/to/skill or https://github.com/user/repo"
+            className="flex-1 bg-transparent py-4 text-sm font-mono text-slate-100 outline-none placeholder-slate-700"
+          />
+
+          <button
+            id="skill-scan-button"
+            onClick={scan}
+            disabled={scanning || !path.trim()}
+            className="btn-primary shrink-0 py-2"
+          >
+            {scanning ? (
+              <>
+                <svg className="animate-spin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <circle cx="12" cy="12" r="10" strokeOpacity="0.25"/>
+                  <path d="M12 2a10 10 0 0 1 10 10" strokeLinecap="round"/>
+                </svg>
+                Scanning…
+              </>
+            ) : (
+              <>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                  <polygon points="5 3 19 12 5 21 5 3"/>
+                </svg>
+                Scan
+              </>
+            )}
+          </button>
+        </div>
+      </div>
+
+      <p className="text-xs mb-8" style={{ color: "#334155" }}>
+        Supports local paths and GitHub URLs — e.g.{" "}
+        <code style={{ color: "#475569" }}>https://github.com/user/repo/tree/main/skills/my-skill</code>
       </p>
 
-      {/* Error */}
+      {/* ─── Error ───────────────────────────────────────── */}
       {error && (
-        <div className="mb-6 p-4 bg-red-950/50 border border-red-800 rounded-lg text-red-400 text-sm">
+        <div
+          className="rounded-2xl px-4 py-3.5 mb-6 text-sm animate-slide-in"
+          style={{
+            background: "rgba(127,29,29,0.25)",
+            border:     "1px solid rgba(220,38,38,0.3)",
+            color:      "#fca5a5",
+          }}
+        >
           {error}
         </div>
       )}
 
-      {/* Results */}
+      {/* ─── Results ─────────────────────────────────────── */}
       {result && (
-        <div>
-          {/* Summary */}
-          <div className="bg-slate-900/60 border border-slate-700 rounded-xl p-6 mb-6">
-            <div className="flex items-center justify-between mb-4">
+        <div className="animate-fade-in">
+          {/* Summary card */}
+          <div
+            className="rounded-2xl p-6 mb-6"
+            style={{
+              background:    "rgba(13,21,38,0.7)",
+              border:        "1px solid rgba(255,255,255,0.08)",
+              backdropFilter: "blur(12px)",
+            }}
+          >
+            <div className="flex items-start justify-between mb-4 flex-wrap gap-3">
               <div>
-                <div className="flex items-center gap-2 mb-1">
+                <div className="flex items-center gap-2.5 mb-1.5 flex-wrap">
                   <h3 className="font-bold text-slate-100">Scan Results</h3>
                   {result.platform !== "unknown" && (
-                    <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                      result.platform === "nanoclaw"
-                        ? "bg-purple-900/50 text-purple-300 border border-purple-700"
-                        : "bg-blue-900/50 text-blue-300 border border-blue-700"
-                    }`}>
+                    <span
+                      className="px-2.5 py-0.5 rounded-full text-xs font-semibold"
+                      style={
+                        result.platform === "nanoclaw"
+                          ? { background: "rgba(88,28,135,0.3)", color: "#c084fc", border: "1px solid rgba(192,132,252,0.25)" }
+                          : { background: "rgba(30,64,175,0.3)", color: "#60a5fa", border: "1px solid rgba(96,165,250,0.25)" }
+                      }
+                    >
                       {result.platform === "nanoclaw" ? "NanoClaw Skill" : "OpenClaw Skill"}
                     </span>
                   )}
                 </div>
-                <p className="text-sm text-slate-400">
+                <p className="text-sm text-slate-500">
                   Scanned {result.scannedFiles} file(s) in{" "}
-                  <span className="font-mono text-slate-300">{result.skillPath}</span>
+                  <code className="font-mono text-slate-400">{result.skillPath}</code>
                 </p>
               </div>
               <RiskBadge severity={result.riskLevel} />
             </div>
 
             {/* Risk score bar */}
-            <div className="mb-3">
-              <div className="flex justify-between text-xs text-slate-500 mb-1">
+            <div className="mb-4">
+              <div className="flex justify-between text-xs mb-2" style={{ color: "#475569" }}>
                 <span>Risk Score</span>
-                <span>{result.riskScore}/100</span>
+                <span className="font-mono" style={{ color: riskBarColor(result.riskScore) }}>
+                  {result.riskScore}/100
+                </span>
               </div>
-              <div className="h-3 bg-slate-800 rounded-full overflow-hidden">
+              <div className="risk-bar-track">
                 <div
-                  className={`h-full rounded-full transition-all duration-500 ${riskBarColor(result.riskScore)}`}
-                  style={{ width: `${result.riskScore}%` }}
+                  className="h-full rounded-full transition-all duration-700 ease-out"
+                  style={{
+                    width:      `${result.riskScore}%`,
+                    background: `linear-gradient(90deg, ${riskBarColor(result.riskScore)}, ${riskBarColor(result.riskScore)}cc)`,
+                    boxShadow:  `0 0 10px ${riskBarGlow(result.riskScore)}`,
+                  }}
                 />
               </div>
             </div>
 
-            <p className="text-sm text-slate-300">{result.summary}</p>
+            <p className="text-sm text-slate-300 leading-relaxed">{result.summary}</p>
           </div>
 
-          {/* Findings grouped by severity */}
+          {/* Findings */}
           {grouped.length === 0 ? (
-            <div className="text-center py-12">
-              <div className="text-4xl mb-3">✅</div>
-              <p className="text-green-400 font-medium">No threats detected</p>
-              <p className="text-sm text-slate-500 mt-1">This skill appears safe to install.</p>
+            <div
+              className="text-center py-16 rounded-2xl"
+              style={{
+                background: "rgba(20,83,45,0.1)",
+                border: "1px solid rgba(74,222,128,0.15)",
+              }}
+            >
+              <div
+                className="inline-flex items-center justify-center w-14 h-14 rounded-full mb-4"
+                style={{ background: "rgba(20,83,45,0.3)", border: "1px solid rgba(74,222,128,0.25)" }}
+              >
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4ade80" strokeWidth="2.5" strokeLinecap="round">
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
+              </div>
+              <p className="font-semibold mb-1" style={{ color: "#4ade80" }}>No threats detected</p>
+              <p className="text-sm text-slate-500">This skill appears safe to install.</p>
             </div>
           ) : (
             <div className="space-y-6">
@@ -145,32 +234,33 @@ export function SkillScanner() {
                 <div key={group.severity}>
                   <div className="flex items-center gap-2 mb-3">
                     <RiskBadge severity={group.severity} />
-                    <span className="text-sm text-slate-400">
-                      {group.matches.length} finding(s)
-                    </span>
+                    <span className="text-sm text-slate-500">{group.matches.length} finding(s)</span>
                   </div>
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     {group.matches.map((m, i) => (
                       <div
                         key={`${m.pattern.id}-${i}`}
-                        className="bg-slate-900 border border-slate-800 rounded-lg p-4"
+                        className="rounded-2xl p-4"
+                        style={{
+                          background:    "rgba(13,21,38,0.7)",
+                          border:        "1px solid rgba(255,255,255,0.07)",
+                          backdropFilter: "blur(8px)",
+                        }}
                       >
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="font-medium text-slate-200 text-sm">{m.pattern.name}</span>
-                          <span className="text-xs text-slate-500 font-mono">
+                        <div className="flex items-center gap-2.5 mb-1.5 flex-wrap">
+                          <span className="font-semibold text-slate-200 text-sm">{m.pattern.name}</span>
+                          <span className="text-xs font-mono" style={{ color: "#475569" }}>
                             {m.file}:{m.line}
                           </span>
                         </div>
-                        <p className="text-xs text-slate-400 mb-2">{m.pattern.description}</p>
+                        <p className="text-xs text-slate-400 mb-2.5 leading-relaxed">{m.pattern.description}</p>
                         {m.pattern.impact && (
-                          <p className="text-xs text-amber-400/80 mb-2">
-                            <span className="font-medium">Why this matters: </span>
-                            {m.pattern.impact}
+                          <p className="text-xs mb-2.5 leading-relaxed">
+                            <span className="font-semibold" style={{ color: "#fbbf24" }}>⚠ Why this matters: </span>
+                            <span style={{ color: "rgba(251,191,36,0.75)" }}>{m.pattern.impact}</span>
                           </p>
                         )}
-                        <pre className="text-xs font-mono bg-slate-950 border border-slate-800 rounded p-2 text-red-400 overflow-x-auto">
-                          {m.content}
-                        </pre>
+                        <pre className="code-block">{m.content}</pre>
                       </div>
                     ))}
                   </div>
@@ -178,6 +268,28 @@ export function SkillScanner() {
               ))}
             </div>
           )}
+        </div>
+      )}
+
+      {/* ─── Empty state ─────────────────────────────────── */}
+      {!result && !scanning && !error && (
+        <div className="text-center py-20">
+          <div
+            className="inline-flex items-center justify-center w-16 h-16 rounded-2xl mb-5"
+            style={{
+              background:    "rgba(220,38,38,0.08)",
+              border:        "1px solid rgba(220,38,38,0.15)",
+              backdropFilter: "blur(8px)",
+            }}
+          >
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="rgba(220,38,38,0.6)" strokeWidth="1.5" strokeLinecap="round">
+              <circle cx="11" cy="11" r="8"/>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+              <line x1="11" y1="8" x2="11" y2="14"/>
+              <line x1="8" y1="11" x2="14" y2="11"/>
+            </svg>
+          </div>
+          <p className="text-slate-500 text-sm">Enter a skill path or GitHub URL above to begin scanning</p>
         </div>
       )}
     </div>
