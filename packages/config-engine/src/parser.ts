@@ -6,7 +6,7 @@ import {
   type OpenClawConfig,
   type ClawGuardConfig,
   DEFAULT_OPENCLAW_CONFIG,
-  DEFAULT_SAFECLAW_CONFIG,
+  DEFAULT_CLAWGUARD_CONFIG,
 } from "./schema.js";
 import { applyClawGuardToOpenClaw, inferClawGuardFromOpenClaw } from "./mapper.js";
 
@@ -140,11 +140,11 @@ export async function readConfig(
   try {
     const raw = await readFile(scPath, "utf-8");
     const parsed = JSON.parse(raw);
-    clawguard = deepMerge(DEFAULT_SAFECLAW_CONFIG, parsed);
+    clawguard = deepMerge(DEFAULT_CLAWGUARD_CONFIG, parsed);
   } catch {
     // No sidecar yet — infer from OpenClaw config
     const inferred = inferClawGuardFromOpenClaw(openclaw);
-    clawguard = deepMerge(DEFAULT_SAFECLAW_CONFIG, inferred);
+    clawguard = deepMerge(DEFAULT_CLAWGUARD_CONFIG, inferred);
   }
 
   return { openclaw, clawguard };

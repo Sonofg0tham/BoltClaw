@@ -4,6 +4,7 @@ COPY package.json package-lock.json* ./
 COPY packages/config-engine/package.json packages/config-engine/
 COPY packages/skill-scanner/package.json packages/skill-scanner/
 COPY packages/dashboard/package.json packages/dashboard/
+COPY packages/mcp-server/package.json packages/mcp-server/
 RUN npm install
 COPY packages/ packages/
 COPY tsconfig.json ./

@@ -60,7 +60,7 @@ const PROFILE_STYLES: Record<string, { gradient: string; accent: string; glow: s
 
 const STEPS = ["Profile", "Messaging", "Permissions", "Review"];
 
-export function SetupWizard() {
+export function SetupWizard({ onComplete }: { onComplete?: () => void }) {
   const [step, setStep] = useState(0);
   const [profiles, setProfiles] = useState<SecurityProfile[]>([]);
   const [config, setConfig] = useState<CombinedConfig | null>(null);
@@ -126,7 +126,7 @@ export function SetupWizard() {
   async function goToReview() {
     if (!config) return;
     try {
-      const res = await fetch("/api/config", {
+      const res = await fetch("/api/config/score", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(config),
@@ -152,6 +152,7 @@ export function SetupWizard() {
       const data = await res.json();
       setScore(data.score);
       setApplied(true);
+      setTimeout(() => onComplete?.(), 1500);
     } catch {
       setError("Failed to apply configuration. Is the server running?");
     } finally {

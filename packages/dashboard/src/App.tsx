@@ -134,7 +134,7 @@ export function App() {
 
       {/* ── Content ────────────────────────────────────────── */}
       <main className="flex-1 max-w-7xl mx-auto w-full px-6 py-8 animate-fade-in">
-        {tab === "wizard"    && <SetupWizard />}
+        {tab === "wizard"    && <SetupWizard onComplete={() => setTab("dashboard")} />}
         {tab === "dashboard" && <PermissionDashboard />}
         {tab === "scanner"   && <SkillScanner />}
         {tab === "audit"     && <AuditLog />}

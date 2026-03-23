@@ -6,7 +6,8 @@
   "workspaces": [
     "packages/config-engine",
     "packages/skill-scanner",
-    "packages/dashboard"
+    "packages/dashboard",
+    "packages/mcp-server"
   ],
   "scripts": {
     "dev": "npm run dev --workspace=packages/dashboard",

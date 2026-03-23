@@ -39,6 +39,7 @@ services:
       - "3000:3000"
     volumes:
       - ./openclaw-defaults:/config
+      - ../test-skills:/test-skills:ro
     networks:
       - clawguard-net
     environment:

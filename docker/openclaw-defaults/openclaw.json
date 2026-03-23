@@ -1,12 +1,8 @@
 {
-  "meta": {
-    "lastTouchedVersion": "2026.3.13",
-    "lastTouchedAt": "2026-03-17T23:10:59.684Z"
-  },
   "agents": {
     "defaults": {
       "sandbox": {
-        "mode": "all"
+        "mode": "non-main"
       }
     }
   },
@@ -25,6 +21,11 @@
     }
   },
   "skills": {
-    "allowBundled": []
+    "allowBundled": [
+      "*"
+    ]
+  },
+  "meta": {
+    "lastTouchedAt": "2026-03-23T22:41:09.241Z"
   }
 }

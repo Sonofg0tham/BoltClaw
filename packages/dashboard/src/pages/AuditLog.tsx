@@ -47,8 +47,8 @@ export function AuditLog() {
       const res = await fetch("/api/audit");
       const data = await res.json();
       setEvents(data.events || []);
-    } catch {
-      // silently fail
+    } catch (err) {
+      console.error("Failed to fetch audit events:", err);
     } finally {
       setLoading(false);
     }
@@ -58,8 +58,8 @@ export function AuditLog() {
     try {
       await fetch("/api/audit", { method: "DELETE" });
       setEvents([]);
-    } catch {
-      // ignore
+    } catch (err) {
+      console.error("Failed to clear audit log:", err);
     }
   }
 

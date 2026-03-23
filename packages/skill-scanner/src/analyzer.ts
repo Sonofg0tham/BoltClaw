@@ -44,7 +44,21 @@ const SKIP_DIRS = new Set(["node_modules", ".git", ".env", ".aws", ".ssh", ".vsc
 async function collectFiles(dir: string, depth = 0): Promise<string[]> {
   if (depth > MAX_DEPTH) return [];
   const results: string[] = [];
-  const entries = await readdir(dir, { withFileTypes: true });
+  
+  let entries;
+  try {
+    entries = await readdir(dir, { withFileTypes: true });
+  } catch (err: any) {
+    if (err.code === "ENOTDIR") {
+      const ext = dir.substring(dir.lastIndexOf("."));
+      if (SCANNABLE_EXTENSIONS.has(ext)) {
+        return [dir];
+      }
+      return [];
+    }
+    throw err;
+  }
+
   for (const entry of entries) {
     if (results.length >= MAX_FILE_COUNT) break;
     const fullPath = join(dir, entry.name);
@@ -137,9 +151,16 @@ function calculateRiskScore(matches: ScanMatch[]): number {
     danger: 50,
   };
 
-  let total = 0;
+  // Score by unique pattern IDs - finding the same threat 11 times
+  // is not 11x more dangerous than finding it once.
+  const uniquePatterns = new Map<string, Severity>();
   for (const match of matches) {
-    total += severityWeights[match.pattern.severity];
+    uniquePatterns.set(match.pattern.id, match.pattern.severity);
+  }
+
+  let total = 0;
+  for (const severity of uniquePatterns.values()) {
+    total += severityWeights[severity];
   }
 
   return Math.min(100, total);

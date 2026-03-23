@@ -148,7 +148,7 @@ export const DEFAULT_OPENCLAW_CONFIG: OpenClawConfig = {
   },
 };
 
-export const DEFAULT_SAFECLAW_CONFIG: ClawGuardConfig = {
+export const DEFAULT_CLAWGUARD_CONFIG: ClawGuardConfig = {
   security: {
     shell: "deny",
     filesystem: "deny",
@@ -162,5 +162,5 @@ export const DEFAULT_SAFECLAW_CONFIG: ClawGuardConfig = {
 
 export const DEFAULT_COMBINED_CONFIG: CombinedConfig = {
   openclaw: DEFAULT_OPENCLAW_CONFIG,
-  clawguard: DEFAULT_SAFECLAW_CONFIG,
+  clawguard: DEFAULT_CLAWGUARD_CONFIG,
 };

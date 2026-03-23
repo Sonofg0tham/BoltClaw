@@ -10,11 +10,24 @@ import { join, resolve, normalize, dirname, sep } from "node:path";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { z } from "zod";
+import multer from "multer";
 
 const execFileAsync = promisify(execFile);
+const upload = multer({ dest: tmpdir() });
 
 const app = express();
-app.use(helmet());
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'"],
+      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+      fontSrc: ["'self'", "https://fonts.gstatic.com"],
+      imgSrc: ["'self'", "data:", "blob:"],
+      connectSrc: ["'self'"],
+    },
+  },
+}));
 app.use(express.json({ limit: "1mb" }));
 
 const PORT = parseInt(process.env.PORT || "3000", 10);
@@ -97,6 +110,10 @@ async function fetchGitHubSkill(url: string): Promise<{ tmpDir: string; scanPath
 const CONFIG_DIR = process.env.OPENCLAW_CONFIG_PATH
   ? dirname(process.env.OPENCLAW_CONFIG_PATH)
   : undefined;
+
+// Attempt to resolve where skills live
+const SKILLS_DIR = process.env.OPENCLAW_SKILLS_PATH || (CONFIG_DIR ? join(CONFIG_DIR, "skills") : undefined);
+
 
 // --- Zod Schemas ---
 
@@ -205,6 +222,16 @@ app.post("/api/config", async (req, res) => {
   }
 });
 
+app.post("/api/config/score", (req, res) => {
+  const parsed = CombinedConfigSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: "Invalid config", details: parsed.error.flatten().fieldErrors });
+    return;
+  }
+  const score = scoreConfig(parsed.data);
+  res.json({ score });
+});
+
 app.get("/api/config/backups", async (_req, res) => {
   try {
     const backups = await listBackups(CONFIG_DIR);
@@ -303,6 +330,83 @@ app.post("/api/scan", async (req, res) => {
   }
 });
 
+app.post("/api/scan/upload", upload.single("file"), async (req, res) => {
+  if (!req.file) {
+    res.status(400).json({ error: "No file uploaded" });
+    return;
+  }
+  
+  if (activeScans >= MAX_CONCURRENT_SCANS) {
+    rm(req.file.path, { force: true }).catch(() => {});
+    res.status(429).json({ error: "Too many scans in progress" });
+    return;
+  }
+  activeScans++;
+  
+  try {
+    const result = await scanSkill(req.file.path, req.file.originalname);
+    result.skillPath = req.file.originalname;
+    logEvent("scan", result.riskLevel === "danger" ? "danger" : "info", `Uploaded File scanned: ${req.file.originalname} — ${result.riskLevel}`);
+    res.json(result);
+  } catch (err) {
+    console.error("Upload scan failed:", err);
+    res.status(500).json({ error: "Scan failed" });
+  } finally {
+    activeScans--;
+    rm(req.file.path, { force: true }).catch(() => {});
+  }
+});
+
+app.get("/api/scan/audit", async (_req, res) => {
+  if (!SKILLS_DIR || !existsSync(SKILLS_DIR)) {
+    res.status(404).json({ error: "Skills directory not found or not configured." });
+    return;
+  }
+
+  if (activeScans >= MAX_CONCURRENT_SCANS) {
+    res.status(429).json({ error: "Too many scans in progress, please try again shortly" });
+    return;
+  }
+  activeScans++;
+
+  try {
+    const entries = await import("node:fs/promises").then(fs => fs.readdir(SKILLS_DIR, { withFileTypes: true }));
+    const dirs = entries.filter(e => e.isDirectory() && !e.name.startsWith(".")).map(e => e.name);
+
+    // Cap audits to prevent memory issues with huge skill directories
+    const MAX_AUDIT_SKILLS = 50;
+    const toScan = dirs.slice(0, MAX_AUDIT_SKILLS);
+
+    // Scan sequentially to avoid memory spikes
+    const results = [];
+    for (const dir of toScan) {
+      try {
+        const fullPath = join(SKILLS_DIR, dir);
+        const result = await scanSkill(fullPath);
+        result.skillPath = dir;
+        results.push(result);
+      } catch (err) {
+        console.error(`Failed to scan skill ${dir}:`, err);
+      }
+    }
+    
+    // Sort highest risk first
+    const riskOrder = { danger: 3, warning: 2, caution: 1, safe: 0 };
+    results.sort((a, b) => riskOrder[b.riskLevel] - riskOrder[a.riskLevel]);
+    
+    const skipped = dirs.length - toScan.length;
+    logEvent("scan", "info", `Audited ${results.length} installed skills${skipped > 0 ? ` (${skipped} skipped, cap ${MAX_AUDIT_SKILLS})` : ""}`);
+    res.json({ results, total: dirs.length, scanned: toScan.length });
+  } catch (err) {
+    console.error("Audit failed:", err);
+    res.status(500).json({ error: "Audit failed" });
+  } finally {
+    activeScans--;
+  }
+});
+
+
+
 // --- Audit Log Endpoints ---
 
 app.get("/api/audit", (_req, res) => {
@@ -314,12 +418,17 @@ app.delete("/api/audit", (_req, res) => {
   res.json({ success: true });
 });
 
-// --- Static files (production) ---
+// --- Static files (production build served by Express) ---
+// In production (dist/server/server.js): clientDist = dist/server/../client = dist/client ✓
+// In dev (src/server.ts via tsx): import.meta.dirname = src/, so we also check dist/client
 const clientDist = join(import.meta.dirname, "..", "client");
-if (existsSync(clientDist)) {
-  app.use(express.static(clientDist));
+const clientDistDev = join(import.meta.dirname, "..", "dist", "client");
+const resolvedClientDir = existsSync(clientDist) ? clientDist : existsSync(clientDistDev) ? clientDistDev : null;
+
+if (resolvedClientDir) {
+  app.use(express.static(resolvedClientDir));
   app.get("*splat", (_req, res) => {
-    res.sendFile(join(clientDist, "index.html"));
+    res.sendFile(join(resolvedClientDir, "index.html"));
   });
 }
 

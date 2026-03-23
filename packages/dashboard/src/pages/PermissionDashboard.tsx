@@ -2,7 +2,8 @@ import { useState, useEffect } from "react";
 import { SecurityScore } from "../components/SecurityScore.js";
 import { RiskBadge } from "../components/RiskBadge.js";
 import { ErrorBanner } from "../components/ErrorBanner.js";
-import type { PermissionLevel, Severity, CombinedConfig, ScoreResult, SandboxMode } from "../types.js";
+import { InfoIcon } from "../components/InfoIcon.js";
+import type { PermissionLevel, Severity, CombinedConfig, ScoreResult, SandboxMode, ScanResult } from "../types.js";
 
 interface ConfigResponse {
   config: CombinedConfig;
@@ -74,6 +75,10 @@ export function PermissionDashboard() {
   const [showBackups, setShowBackups] = useState(false);
   const [restoringBackup, setRestoringBackup] = useState<string | null>(null);
 
+  const [auditing, setAuditing] = useState(false);
+  const [auditResults, setAuditResults] = useState<ScanResult[] | null>(null);
+  const [auditError, setAuditError] = useState<string | null>(null);
+
   async function loadConfig() {
     setLoading(true);
     try {
@@ -116,6 +121,22 @@ export function PermissionDashboard() {
       setError("Failed to restore backup. Is the server running?");
     } finally {
       setRestoringBackup(null);
+    }
+  }
+
+  async function runAudit() {
+    setAuditing(true);
+    setAuditResults(null);
+    setAuditError(null);
+    try {
+      const res = await fetch("/api/scan/audit");
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "Audit failed");
+      setAuditResults(json.results);
+    } catch (err: any) {
+      setAuditError(err.message);
+    } finally {
+      setAuditing(false);
     }
   }
 
@@ -232,8 +253,9 @@ export function PermissionDashboard() {
       {/* ─── Score hero ─────────────────────────────────── */}
       <div className="flex flex-col items-center mb-12">
         <SecurityScore score={data.score.score} grade={data.score.grade} size="lg" />
-        <p className="mt-4 text-sm text-slate-500 font-mono tracking-wide uppercase" style={{ letterSpacing: "0.1em" }}>
+        <p className="mt-4 text-sm text-slate-500 font-mono tracking-wide uppercase flex items-center gap-2" style={{ letterSpacing: "0.1em" }}>
           Overall Security Score
+          <InfoIcon text="Scored 0–100 based on your permission levels, sandbox mode, and gateway settings. A = 90–100, B = 75–89, C = 60–74, D = 40–59, F = below 40. Higher is safer." />
         </p>
       </div>
 
@@ -244,6 +266,7 @@ export function PermissionDashboard() {
           style={{ background: "linear-gradient(180deg, #dc2626, #7f1d1d)" }}
         />
         Permission Status
+        <InfoIcon text="Controls what OpenClaw's agent can access. Deny blocks it completely. Ask prompts you each time before allowing. Allow grants unrestricted access — avoid this unless necessary." />
       </h3>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
         {securityCards.map((card) => (
@@ -285,7 +308,10 @@ export function PermissionDashboard() {
           style={{ background: sandboxBg(sandboxMode), border: `1px solid ${sandboxBorder(sandboxMode)}` }}
         >
           <div className="flex items-center justify-between mb-1.5">
-            <span className="font-semibold text-slate-200 text-sm">Sandbox Mode</span>
+            <span className="font-semibold text-slate-200 text-sm flex items-center gap-1.5">
+              Sandbox Mode
+              <InfoIcon text="Sandboxing isolates agents so they can't interfere with each other or your system. 'All' is safest. 'Non-main' only isolates sub-agents. 'Off' means no isolation at all." />
+            </span>
             <RiskBadge severity={sandboxSeverity(sandboxMode)} />
           </div>
           <div className="font-mono text-xs mb-3" style={{ color: "#64748b" }}>{sandboxLabel(sandboxMode)}</div>
@@ -305,7 +331,10 @@ export function PermissionDashboard() {
           }}
         >
           <div className="flex items-center justify-between mb-1.5">
-            <span className="font-semibold text-slate-200 text-sm">Gateway Bind</span>
+            <span className="font-semibold text-slate-200 text-sm flex items-center gap-1.5">
+              Gateway Bind
+              <InfoIcon text="Controls which network interfaces OpenClaw listens on. Loopback means only your own machine can connect — safest. LAN or auto exposes it to other devices on your network." />
+            </span>
             <RiskBadge severity={gatewayBind && gatewayBind !== "loopback" ? "danger" : "safe"} />
           </div>
           <div className="font-mono text-xs mb-3" style={{ color: "#64748b" }}>{gatewayBind || "loopback"}</div>
@@ -325,17 +354,23 @@ export function PermissionDashboard() {
           }}
         >
           <div className="flex items-center justify-between mb-1.5">
-            <span className="font-semibold text-slate-200 text-sm">Bundled Skills</span>
+            <span className="font-semibold text-slate-200 text-sm flex items-center gap-1.5">
+              Bundled Skills
+              <InfoIcon text="Pre-installed skills that ship with OpenClaw. Disabling them means only skills you've explicitly approved can run — reduces your attack surface." />
+            </span>
             <RiskBadge severity={allowBundled.length > 0 ? "caution" : "safe"} />
           </div>
           <div className="font-mono text-xs mb-3" style={{ color: "#64748b" }}>
             {allowBundled.length === 0 ? "none" : allowBundled.includes("*") ? "all enabled" : `${allowBundled.length} enabled`}
           </div>
           {allowBundled.length > 0 && (
-            <button onClick={quickFixSkills} className="btn-success w-full justify-center text-xs py-1.5">
+            <button onClick={quickFixSkills} className="btn-success w-full justify-center text-xs py-1.5 mb-2">
               Quick Fix → none
             </button>
           )}
+          <button onClick={runAudit} disabled={auditing} className="btn-secondary w-full justify-center text-xs py-1.5">
+            {auditing ? "Auditing..." : "Audit All Installed"}
+          </button>
         </div>
       </div>
 
@@ -364,6 +399,56 @@ export function PermissionDashboard() {
               </div>
             ))}
           </div>
+        </div>
+      )}
+
+      {/* ─── Audit Results ──────────────────────────────── */}
+      {(auditResults || auditError) && (
+        <div className="mb-8 animate-fade-in">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="section-heading flex items-center gap-2 mb-0">
+              <span
+                className="inline-block w-1 h-5 rounded-full"
+                style={{ background: "linear-gradient(180deg, #dc2626, #7f1d1d)" }}
+              />
+              Audit Results
+            </h3>
+            <button onClick={runAudit} disabled={auditing} className="btn-secondary text-xs py-1 px-3">
+              {auditing ? "..." : "Re-run Audit"}
+            </button>
+          </div>
+          
+          {auditError && (
+            <div className="rounded-xl px-4 py-3 text-sm text-red-400 bg-red-950/30 border border-red-900/50 mb-4">
+              {auditError}
+            </div>
+          )}
+
+          {auditResults && (
+            <div className="space-y-2">
+              {auditResults.length === 0 ? (
+                <p className="text-sm text-slate-500">No installed skills found in the configured directory.</p>
+              ) : (
+                auditResults.map((res, i) => (
+                  <div
+                    key={res.skillPath + i}
+                    className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-xl px-4 py-3"
+                    style={{ background: "rgba(7,12,20,0.5)", border: "1px solid rgba(255,255,255,0.06)" }}
+                  >
+                    <div>
+                      <div className="flex items-center gap-2 mb-1">
+                        <RiskBadge severity={res.riskLevel} />
+                        <span className="text-sm font-semibold text-slate-200">{res.skillPath}</span>
+                      </div>
+                      <p className="text-xs text-slate-500">
+                        Score: {res.riskScore} — {res.matches.length} matches found
+                      </p>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          )}
         </div>
       )}
 

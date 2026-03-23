@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useCallback, type ChangeEvent, type DragEvent } from "react";
 import { RiskBadge } from "../components/RiskBadge.js";
 import type { Severity, ScanResult } from "../types.js";
 
@@ -22,6 +22,55 @@ export function SkillScanner() {
   const [result, setResult] = useState<ScanResult | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [dragging, setDragging] = useState(false);
+
+  const handleDrop = useCallback(async (e: DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragging(false);
+
+    const file = e.dataTransfer.files?.[0];
+    if (!file) return;
+
+    setScanning(true);
+    setResult(null);
+    setError(null);
+    setPath(file.name);
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+      const res = await fetch("/api/scan/upload", {
+        method: "POST",
+        body: formData,
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || "Upload scan failed");
+      } else {
+        setResult(data);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? `Upload error: ${err.message}` : "Failed to connect to server");
+    } finally {
+      setScanning(false);
+    }
+  }, []);
+
+  const handleDragOver = useCallback((e: DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragging(true);
+  }, []);
+
+  const handleDragLeave = useCallback((e: DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragging(false);
+  }, []);
+
   async function scan() {
     if (!path.trim()) return;
     setScanning(true);
@@ -39,10 +88,42 @@ export function SkillScanner() {
       } else {
         setResult(data);
       }
-    } catch {
-      setError("Failed to connect to server");
+    } catch (err) {
+      setError(err instanceof Error ? `Connection error: ${err.message}` : "Failed to connect to server");
     } finally {
       setScanning(false);
+    }
+  }
+
+  async function handleFileUpload(e: ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    setScanning(true);
+    setResult(null);
+    setError(null);
+    setPath(file.name); // Show filename in the input box visually
+    
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+      const res = await fetch("/api/scan/upload", {
+        method: "POST",
+        body: formData,
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || "Upload scan failed");
+      } else {
+        setResult(data);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? `Upload error: ${err.message}` : "Failed to connect to server");
+    } finally {
+      setScanning(false);
+      // Reset input so the same file can be uploaded again if needed
+      if (fileInputRef.current) fileInputRef.current.value = "";
     }
   }
 
@@ -70,12 +151,19 @@ export function SkillScanner() {
       <div
         className={`relative rounded-2xl mb-3 overflow-hidden transition-all duration-300 ${scanning ? "scan-overlay" : ""}`}
         style={{
-          background: "rgba(13,21,38,0.7)",
-          border:     scanning
-            ? "1px solid rgba(220,38,38,0.4)"
-            : "1px solid rgba(255,255,255,0.08)",
-          boxShadow:  scanning ? "0 0 24px rgba(220,38,38,0.15)" : "none",
+          background: dragging ? "rgba(30,64,175,0.15)" : "rgba(13,21,38,0.7)",
+          border:     dragging
+            ? "2px dashed rgba(96,165,250,0.5)"
+            : scanning
+              ? "1px solid rgba(220,38,38,0.4)"
+              : "1px solid rgba(255,255,255,0.08)",
+          boxShadow:  dragging
+            ? "0 0 24px rgba(96,165,250,0.15)"
+            : scanning ? "0 0 24px rgba(220,38,38,0.15)" : "none",
         }}
+        onDrop={handleDrop}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
       >
         <div className="flex items-center gap-3 px-4 py-1">
           {/* Icon */}
@@ -102,6 +190,28 @@ export function SkillScanner() {
             placeholder="/path/to/skill or https://github.com/user/repo"
             className="flex-1 bg-transparent py-4 text-sm font-mono text-slate-100 outline-none placeholder-slate-700"
           />
+
+          <input
+            type="file"
+            ref={fileInputRef}
+            onChange={handleFileUpload}
+            className="hidden"
+            accept=".js,.ts,.py,.sh,.bash,.json,.yaml,.yml"
+          />
+
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={scanning}
+            className="btn-secondary shrink-0 py-2 !px-3"
+            title="Upload skill file"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="17 8 12 3 7 8"/>
+              <line x1="12" y1="3" x2="12" y2="15"/>
+            </svg>
+          </button>
 
           <button
             id="skill-scan-button"

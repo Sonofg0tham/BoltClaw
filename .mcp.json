@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "clawguard": {
+      "command": "node",
+      "args": ["packages/mcp-server/dist/index.js"],
+      "env": {}
+    }
+  }
+}
