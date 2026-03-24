@@ -6,88 +6,117 @@ interface SecurityScoreProps {
 
 function scoreColor(score: number): string {
   if (score >= 90) return "#22c55e";
-  if (score >= 70) return "#eab308";
-  if (score >= 50) return "#f97316";
+  if (score >= 75) return "#84cc16";
+  if (score >= 60) return "#eab308";
+  if (score >= 40) return "#f97316";
   return "#ef4444";
 }
 
 function scoreGlow(score: number): string {
-  if (score >= 90) return "rgba(34,197,94,0.35)";
-  if (score >= 70) return "rgba(234,179,8,0.35)";
-  if (score >= 50) return "rgba(249,115,22,0.35)";
-  return "rgba(239,68,68,0.35)";
+  if (score >= 90) return "rgba(34,197,94,0.4)";
+  if (score >= 75) return "rgba(132,204,22,0.4)";
+  if (score >= 60) return "rgba(234,179,8,0.4)";
+  if (score >= 40) return "rgba(249,115,22,0.4)";
+  return "rgba(239,68,68,0.4)";
 }
 
+const ZONES = [
+  { label: "F", min: 0,  max: 39,  color: "#ef4444" },
+  { label: "D", min: 40, max: 59,  color: "#f97316" },
+  { label: "C", min: 60, max: 74,  color: "#eab308" },
+  { label: "B", min: 75, max: 89,  color: "#84cc16" },
+  { label: "A", min: 90, max: 100, color: "#22c55e" },
+];
+
 export function SecurityScore({ score, grade, size = "lg" }: SecurityScoreProps) {
-  const dim = size === "lg" ? 200 : 80;
-  const strokeWidth = size === "lg" ? 12 : 7;
-  const radius = (dim - strokeWidth) / 2;
-  const circumference = 2 * Math.PI * radius;
-  const filled = (score / 100) * circumference;
   const color = scoreColor(score);
   const glow  = scoreGlow(score);
 
+  if (size === "sm") {
+    return (
+      <span className="inline-flex items-center gap-1.5">
+        <span style={{ color, fontWeight: 700, fontSize: 18, textShadow: `0 0 10px ${glow}` }}>{grade}</span>
+        <span style={{ color: "rgba(148,163,184,0.6)", fontSize: 10, fontFamily: "monospace" }}>{score}</span>
+      </span>
+    );
+  }
+
   return (
-    <div className="relative inline-flex items-center justify-center" style={{ width: dim, height: dim }}>
-      {/* Outer ambient glow ring */}
-      {size === "lg" && (
-        <div
-          className="absolute inset-0 rounded-full"
-          style={{
-            background: `radial-gradient(circle, ${glow} 0%, transparent 70%)`,
-            transform: "scale(1.15)",
-          }}
-        />
-      )}
-
-      <svg width={dim} height={dim} className="-rotate-90" style={{ filter: `drop-shadow(0 0 ${size === "lg" ? 8 : 4}px ${glow})` }}>
-        {/* Track */}
-        <circle
-          cx={dim / 2}
-          cy={dim / 2}
-          r={radius}
-          fill="none"
-          stroke="rgba(255,255,255,0.06)"
-          strokeWidth={strokeWidth}
-        />
-        {/* Progress */}
-        <circle
-          cx={dim / 2}
-          cy={dim / 2}
-          r={radius}
-          fill="none"
-          stroke={color}
-          strokeWidth={strokeWidth}
-          strokeDasharray={circumference}
-          strokeDashoffset={circumference - filled}
-          strokeLinecap="round"
-          className="transition-all duration-1000 ease-out"
-        />
-      </svg>
-
-      {/* Center text */}
-      <div className="absolute inset-0 flex flex-col items-center justify-center">
+    <div style={{ width: 220, textAlign: "center" }}>
+      {/* Grade badge */}
+      <div
+        style={{
+          display:        "inline-flex",
+          alignItems:     "center",
+          justifyContent: "center",
+          width:          88,
+          height:         88,
+          borderRadius:   16,
+          background:     "rgba(7,12,20,0.8)",
+          border:         `2px solid ${color}`,
+          boxShadow:      `0 0 24px ${glow}, inset 0 0 20px rgba(0,0,0,0.4)`,
+          marginBottom:   12,
+        }}
+      >
         <span
-          className="font-bold leading-none"
           style={{
-            fontSize:  size === "lg" ? 52 : 20,
+            fontSize:      52,
+            fontWeight:    900,
             color,
-            textShadow: `0 0 20px ${glow}`,
-            letterSpacing: "-0.03em",
+            textShadow:    `0 0 20px ${glow}`,
+            lineHeight:    1,
+            letterSpacing: "-0.04em",
           }}
         >
           {grade}
         </span>
-        <span
-          className="font-mono mt-1"
-          style={{
-            fontSize: size === "lg" ? 13 : 9,
-            color:    "rgba(148,163,184,0.7)",
-            letterSpacing: "0.05em",
-          }}
-        >
-          {score}/100
-        </span>
+      </div>
+
+      {/* Score number */}
+      <div
+        style={{
+          fontFamily:    "monospace",
+          fontSize:      13,
+          color:         "rgba(148,163,184,0.65)",
+          letterSpacing: "0.06em",
+          marginBottom:  14,
+        }}
+      >
+        {score} / 100
+      </div>
+
+      {/* Zone bar */}
+      <div style={{ display: "flex", gap: 4, alignItems: "flex-end" }}>
+        {ZONES.map(zone => {
+          const active = score >= zone.min && score <= zone.max;
+          const filled = score > zone.max;
+          const lit = active || filled;
+          return (
+            <div key={zone.label} style={{ flex: 1, textAlign: "center" }}>
+              <div
+                style={{
+                  height:       active ? 10 : 6,
+                  borderRadius: 4,
+                  background:   lit ? zone.color : "rgba(255,255,255,0.07)",
+                  boxShadow:    active ? `0 0 10px ${zone.color}` : undefined,
+                  transition:   "all 0.4s ease",
+                  marginBottom: 4,
+                }}
+              />
+              <span
+                style={{
+                  fontSize:   9,
+                  fontFamily: "monospace",
+                  color:      active ? zone.color : "rgba(148,163,184,0.25)",
+                  fontWeight: active ? 700 : 400,
+                  transition: "color 0.4s ease",
+                }}
+              >
+                {zone.label}
+              </span>
+            </div>
+          );
+        })}
       </div>
     </div>
   );

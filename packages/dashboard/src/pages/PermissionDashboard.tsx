@@ -439,9 +439,15 @@ export function PermissionDashboard() {
                       <div className="flex items-center gap-2 mb-1">
                         <RiskBadge severity={res.riskLevel} />
                         <span className="text-sm font-semibold text-slate-200">{res.skillPath}</span>
+                        {(res as ScanResult & { source?: string }).source && (
+                          <span className="text-xs px-1.5 py-0.5 rounded font-mono"
+                            style={{ background: "rgba(255,255,255,0.06)", color: "#64748b" }}>
+                            {(res as ScanResult & { source?: string }).source}
+                          </span>
+                        )}
                       </div>
                       <p className="text-xs text-slate-500">
-                        Score: {res.riskScore} — {res.matches.length} matches found
+                        Score: {res.riskScore} — {res.matches.length} {res.matches.length === 1 ? "match" : "matches"} found
                       </p>
                     </div>
                   </div>

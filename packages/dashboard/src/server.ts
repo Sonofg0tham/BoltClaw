@@ -114,6 +114,18 @@ const CONFIG_DIR = process.env.OPENCLAW_CONFIG_PATH
 // Attempt to resolve where skills live
 const SKILLS_DIR = process.env.OPENCLAW_SKILLS_PATH || (CONFIG_DIR ? join(CONFIG_DIR, "skills") : undefined);
 
+// Discover OpenClaw's bundled skills dir via npm root -g
+async function findBundledSkillsDir(): Promise<string | null> {
+  const npmCmd = process.platform === "win32" ? "npm.cmd" : "npm";
+  try {
+    const { stdout } = await execFileAsync(npmCmd, ["root", "-g"], { timeout: 5000 });
+    const candidate = join(stdout.trim(), "openclaw", "skills");
+    return existsSync(candidate) ? candidate : null;
+  } catch {
+    return null;
+  }
+}
+
 
 // --- Zod Schemas ---
 
@@ -358,45 +370,63 @@ app.post("/api/scan/upload", upload.single("file"), async (req, res) => {
 });
 
 app.get("/api/scan/audit", async (_req, res) => {
-  if (!SKILLS_DIR || !existsSync(SKILLS_DIR)) {
-    res.status(404).json({ error: "Skills directory not found or not configured." });
-    return;
-  }
-
   if (activeScans >= MAX_CONCURRENT_SCANS) {
     res.status(429).json({ error: "Too many scans in progress, please try again shortly" });
     return;
   }
+
+  // Collect directories to scan: user-installed + bundled
+  const dirsToScan: Array<{ root: string; source: "installed" | "bundled" }> = [];
+  if (SKILLS_DIR && existsSync(SKILLS_DIR)) {
+    dirsToScan.push({ root: SKILLS_DIR, source: "installed" });
+  }
+  const bundledDir = await findBundledSkillsDir();
+  if (bundledDir) {
+    dirsToScan.push({ root: bundledDir, source: "bundled" });
+  }
+
+  if (dirsToScan.length === 0) {
+    res.status(404).json({ error: "No skills directories found. Install OpenClaw or set OPENCLAW_SKILLS_PATH." });
+    return;
+  }
+
   activeScans++;
 
   try {
-    const entries = await import("node:fs/promises").then(fs => fs.readdir(SKILLS_DIR, { withFileTypes: true }));
-    const dirs = entries.filter(e => e.isDirectory() && !e.name.startsWith(".")).map(e => e.name);
-
-    // Cap audits to prevent memory issues with huge skill directories
     const MAX_AUDIT_SKILLS = 50;
-    const toScan = dirs.slice(0, MAX_AUDIT_SKILLS);
+    const allResults: Array<ReturnType<typeof scanSkill> extends Promise<infer T> ? T & { source: string } : never> = [];
+    let totalDirs = 0;
+    let totalScanned = 0;
 
-    // Scan sequentially to avoid memory spikes
-    const results = [];
-    for (const dir of toScan) {
-      try {
-        const fullPath = join(SKILLS_DIR, dir);
-        const result = await scanSkill(fullPath);
-        result.skillPath = dir;
-        results.push(result);
-      } catch (err) {
-        console.error(`Failed to scan skill ${dir}:`, err);
+    for (const { root, source } of dirsToScan) {
+      const entries = await import("node:fs/promises").then(fs => fs.readdir(root, { withFileTypes: true }));
+      const dirs = entries.filter(e => e.isDirectory() && !e.name.startsWith(".")).map(e => e.name);
+      totalDirs += dirs.length;
+
+      const remaining = MAX_AUDIT_SKILLS - totalScanned;
+      const toScan = dirs.slice(0, remaining);
+      totalScanned += toScan.length;
+
+      for (const dir of toScan) {
+        try {
+          const result = await scanSkill(join(root, dir));
+          result.skillPath = dir;
+          allResults.push({ ...result, source });
+        } catch (err) {
+          console.error(`Failed to scan skill ${dir}:`, err);
+        }
       }
+
+      if (totalScanned >= MAX_AUDIT_SKILLS) break;
     }
-    
+
     // Sort highest risk first
     const riskOrder = { danger: 3, warning: 2, caution: 1, safe: 0 };
-    results.sort((a, b) => riskOrder[b.riskLevel] - riskOrder[a.riskLevel]);
-    
-    const skipped = dirs.length - toScan.length;
-    logEvent("scan", "info", `Audited ${results.length} installed skills${skipped > 0 ? ` (${skipped} skipped, cap ${MAX_AUDIT_SKILLS})` : ""}`);
-    res.json({ results, total: dirs.length, scanned: toScan.length });
+    allResults.sort((a, b) => riskOrder[b.riskLevel] - riskOrder[a.riskLevel]);
+
+    const skipped = totalDirs - totalScanned;
+    logEvent("scan", "info", `Audited ${allResults.length} skills${skipped > 0 ? ` (${skipped} skipped)` : ""}`);
+    res.json({ results: allResults, total: totalDirs, scanned: totalScanned });
   } catch (err) {
     console.error("Audit failed:", err);
     res.status(500).json({ error: "Audit failed" });

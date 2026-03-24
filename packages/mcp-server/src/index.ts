@@ -3,6 +3,12 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
+import { readdir } from "node:fs/promises";
+import { existsSync } from "node:fs";
+import { join } from "node:path";
+import { homedir } from "node:os";
 import {
   readConfig,
   writeConfig,
@@ -344,6 +350,133 @@ server.registerTool(
     } catch (err) {
       return {
         content: [{ type: "text", text: `Restore failed: ${err instanceof Error ? err.message : String(err)}` }],
+        isError: true,
+      };
+    }
+  },
+);
+
+// --- scan_installed_skills ---
+
+const execFileAsync = promisify(execFile);
+
+async function discoverSkillDirs(): Promise<Array<{ root: string; source: "installed" | "bundled" }>> {
+  const dirs: Array<{ root: string; source: "installed" | "bundled" }> = [];
+
+  // User-installed skills at ~/.openclaw/skills
+  const installedDir = join(homedir(), ".openclaw", "skills");
+  if (existsSync(installedDir)) dirs.push({ root: installedDir, source: "installed" });
+
+  // Bundled skills shipped with the openclaw npm package
+  const npmCmd = process.platform === "win32" ? "npm.cmd" : "npm";
+  try {
+    const { stdout } = await execFileAsync(npmCmd, ["root", "-g"], { timeout: 5000 });
+    const candidate = join(stdout.trim(), "openclaw", "skills");
+    if (existsSync(candidate)) dirs.push({ root: candidate, source: "bundled" });
+  } catch {
+    // npm not available
+  }
+
+  return dirs;
+}
+
+server.registerTool(
+  "scan_installed_skills",
+  {
+    title: "Scan Installed Skills",
+    description:
+      "Scan all skills currently installed in OpenClaw — both bundled skills that ship with OpenClaw " +
+      "and user-installed skills from ClawHub. Auto-detects skill directories. " +
+      "Use this to audit what's already running, not just skills you're about to install.",
+    inputSchema: z.object({
+      skillsDir: z
+        .string()
+        .optional()
+        .describe("Optional path to a specific skills directory. If omitted, auto-detects OpenClaw's bundled and user-installed skill directories."),
+    }),
+  },
+  async ({ skillsDir }: { skillsDir?: string }) => {
+    try {
+      const dirsToScan = skillsDir
+        ? [{ root: skillsDir, source: "custom" as const }]
+        : await discoverSkillDirs();
+
+      if (dirsToScan.length === 0) {
+        return {
+          content: [{ type: "text", text: "No skill directories found. Install OpenClaw globally or pass a skillsDir path." }],
+        };
+      }
+
+      const MAX_SKILLS = 50;
+      const results: Array<{ name: string; source: string; riskLevel: string; riskScore: number; matchCount: number; topFindings: string[] }> = [];
+      let totalFound = 0;
+      let totalScanned = 0;
+
+      for (const { root, source } of dirsToScan) {
+        let entries;
+        try {
+          entries = await readdir(root, { withFileTypes: true });
+        } catch {
+          continue;
+        }
+        const skillDirs = entries.filter(e => e.isDirectory() && !e.name.startsWith(".")).map(e => e.name);
+        totalFound += skillDirs.length;
+
+        for (const name of skillDirs) {
+          if (totalScanned >= MAX_SKILLS) break;
+          try {
+            const result = await scanSkill(join(root, name));
+            const topFindings = result.matches
+              .filter((m, i, arr) => arr.findIndex(x => x.pattern.name === m.pattern.name) === i)
+              .slice(0, 3)
+              .map(m => `${m.pattern.name} [${m.pattern.severity}]`);
+            results.push({ name, source, riskLevel: result.riskLevel, riskScore: result.riskScore, matchCount: result.matches.length, topFindings });
+            totalScanned++;
+          } catch {
+            // skip unreadable skills
+          }
+        }
+        if (totalScanned >= MAX_SKILLS) break;
+      }
+
+      const riskOrder = { danger: 3, warning: 2, caution: 1, safe: 0 } as Record<string, number>;
+      results.sort((a, b) => (riskOrder[b.riskLevel] ?? 0) - (riskOrder[a.riskLevel] ?? 0));
+
+      const danger = results.filter(r => r.riskLevel === "danger");
+      const warning = results.filter(r => r.riskLevel === "warning");
+      const caution = results.filter(r => r.riskLevel === "caution");
+      const safe = results.filter(r => r.riskLevel === "safe");
+
+      const lines: string[] = [
+        `## Installed Skills Audit`,
+        ``,
+        `**Scanned:** ${totalScanned} skills${totalFound > totalScanned ? ` (${totalFound - totalScanned} skipped, cap ${MAX_SKILLS})` : ""}`,
+        `**Sources:** ${dirsToScan.map(d => `${d.source} (${d.root})`).join(", ")}`,
+        ``,
+        `| Risk | Count |`,
+        `|------|-------|`,
+        `| Danger | ${danger.length} |`,
+        `| Warning | ${warning.length} |`,
+        `| Caution | ${caution.length} |`,
+        `| Safe | ${safe.length} |`,
+      ];
+
+      if (danger.length > 0 || warning.length > 0) {
+        lines.push(``, `### Skills Needing Attention`);
+        for (const r of [...danger, ...warning]) {
+          lines.push(``, `**${r.name}** [${r.source}] — ${r.riskLevel.toUpperCase()} (${r.riskScore}/100)`);
+          if (r.topFindings.length > 0) lines.push(`- Findings: ${r.topFindings.join(", ")}`);
+        }
+      }
+
+      if (caution.length > 0) {
+        lines.push(``, `### Caution`, caution.map(r => `- **${r.name}** [${r.source}] — ${r.riskScore}/100`).join("\n"));
+      }
+
+      return { content: [{ type: "text", text: lines.join("\n") }] };
+    } catch (err) {
+      return {
+        content: [{ type: "text", text: `Audit failed: ${err instanceof Error ? err.message : String(err)}` }],
         isError: true,
       };
     }
