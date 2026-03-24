@@ -145,7 +145,7 @@ export function PermissionDashboard() {
   async function quickFix(key: string) {
     if (!data) return;
     const updated = structuredClone(data.config);
-    updated.clawguard.security[key as keyof typeof updated.clawguard.security] = "deny";
+    updated.boltclaw.security[key as keyof typeof updated.boltclaw.security] = "deny";
     try {
       const res = await fetch("/api/config", {
         method: "POST",
@@ -236,10 +236,10 @@ export function PermissionDashboard() {
   }
 
   const securityCards: PermissionCard[] = [
-    { key: "shell",      label: "Shell",      icon: PERM_ICONS.shell,      value: data.config.clawguard.security.shell,      secureDefault: "deny" },
-    { key: "filesystem", label: "Filesystem", icon: PERM_ICONS.filesystem, value: data.config.clawguard.security.filesystem, secureDefault: "deny" },
-    { key: "browser",    label: "Browser",    icon: PERM_ICONS.browser,    value: data.config.clawguard.security.browser,    secureDefault: "deny" },
-    { key: "network",    label: "Network",    icon: PERM_ICONS.network,    value: data.config.clawguard.security.network,     secureDefault: "deny" },
+    { key: "shell",      label: "Shell",      icon: PERM_ICONS.shell,      value: data.config.boltclaw.security.shell,      secureDefault: "deny" },
+    { key: "filesystem", label: "Filesystem", icon: PERM_ICONS.filesystem, value: data.config.boltclaw.security.filesystem, secureDefault: "deny" },
+    { key: "browser",    label: "Browser",    icon: PERM_ICONS.browser,    value: data.config.boltclaw.security.browser,    secureDefault: "deny" },
+    { key: "network",    label: "Network",    icon: PERM_ICONS.network,    value: data.config.boltclaw.security.network,     secureDefault: "deny" },
   ];
 
   const sandboxMode  = data.config.openclaw.agents?.defaults?.sandbox?.mode;

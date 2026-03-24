@@ -1,23 +1,49 @@
 {
-  "name": "@clawguard/mcp-server",
-  "version": "0.1.0",
-  "private": true,
+  "name": "boltclaw",
+  "version": "0.2.0",
+  "description": "Security control panel for OpenClaw, NanoClaw and NemoClaw AI agents — config hardening, skill scanning, and risk assessment via MCP",
   "type": "module",
   "main": "dist/index.js",
   "bin": {
-    "clawguard-mcp": "dist/index.js"
+    "boltclaw": "dist/index.js"
   },
+  "files": [
+    "dist/index.js",
+    "README.md"
+  ],
   "scripts": {
-    "build": "tsc",
+    "build": "tsup",
+    "build:tsc": "tsc",
     "start": "node dist/index.js"
   },
+  "keywords": [
+    "openclaw",
+    "nanoclaw",
+    "nemoclaw",
+    "security",
+    "mcp",
+    "model-context-protocol",
+    "ai-agent",
+    "skill-scanner",
+    "config-hardening"
+  ],
+  "author": "Craig McCart (CJM Labs)",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Sonofg0tham/BoltClaw"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  },
   "dependencies": {
-    "@clawguard/config-engine": "*",
-    "@clawguard/skill-scanner": "*",
     "@modelcontextprotocol/sdk": "^1.27.1",
     "zod": "^4.3.6"
   },
   "devDependencies": {
+    "@boltclaw/config-engine": "*",
+    "@boltclaw/skill-scanner": "*",
+    "tsup": "^8.5.1",
     "typescript": "^5.7.0"
   }
 }

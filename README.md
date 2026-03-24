@@ -1,10 +1,10 @@
-# ClawGuard
+# BoltClaw
 
 **The security control panel for claw-based AI agents**
 
-ClawGuard gives you visual security management, skill threat scanning, and guided hardening for OpenClaw, NanoClaw, and NemoClaw - so you can see what your agent can access, catch malicious skills before they run, and fix misconfigurations before they become headlines.
+BoltClaw gives you visual security management, skill threat scanning, and guided hardening for OpenClaw, NanoClaw, and NemoClaw - so you can see what your agent can access, catch malicious skills before they run, and fix misconfigurations before they become headlines.
 
-## How ClawGuard is Different
+## How BoltClaw is Different
 
 | Tool | Type | Focus | UI |
 |------|------|-------|----|
@@ -12,13 +12,13 @@ ClawGuard gives you visual security management, skill threat scanning, and guide
 | openclaw-security-monitor | Scanner | 48-point scan, IOC feeds, threat intel | Web dashboard |
 | NemoClaw (Nvidia) | Runtime | OpenShell sandboxing, privacy router | None (CLI) |
 | NanoClaw | Alternative platform | Container isolation from scratch | None (CLI) |
-| **ClawGuard** | **Control panel** | **Config hardening + skill scanning + risk scoring** | **Visual dashboard** |
+| **BoltClaw** | **Control panel** | **Config hardening + skill scanning + risk scoring** | **Visual dashboard** |
 
-ClawGuard is the only tool that combines visual permission management, cross-platform skill scanning, and guided setup - designed for the people who need security most: those who aren't security experts.
+BoltClaw is the only tool that combines visual permission management, cross-platform skill scanning, and guided setup - designed for the people who need security most: those who aren't security experts.
 
 ## Why not just use NanoClaw?
 
-NanoClaw is great for new setups - it's a lightweight, container-first alternative to OpenClaw with strong isolation out of the box. But ClawGuard helps the 250,000+ existing OpenClaw users harden what they already have. ClawGuard's skill scanner also works across both platforms since OpenClaw and NanoClaw share the same SKILL.md format, so you get threat detection regardless of which platform you're running.
+NanoClaw is great for new setups - it's a lightweight, container-first alternative to OpenClaw with strong isolation out of the box. But BoltClaw helps the 250,000+ existing OpenClaw users harden what they already have. BoltClaw's skill scanner also works across both platforms since OpenClaw and NanoClaw share the same SKILL.md format, so you get threat detection regardless of which platform you're running.
 
 ## Architecture
 
@@ -27,7 +27,7 @@ NanoClaw is great for new setups - it's a lightweight, container-first alternati
 │                      YOUR MACHINE                         │
 │                                                           │
 │  ┌─────────────────────────────────────────────────────┐ │
-│  │              ClawGuard Dashboard                     │ │
+│  │              BoltClaw Dashboard                     │ │
 │  │            (localhost:3000)                           │ │
 │  │                                                      │ │
 │  │  ┌──────────┐ ┌───────────┐ ┌────────────────────┐  │ │
@@ -36,7 +36,7 @@ NanoClaw is great for new setups - it's a lightweight, container-first alternati
 │  │  └────┬─────┘ └─────┬─────┘ └──────────┬─────────┘  │ │
 │  │       │              │                  │             │ │
 │  │  ┌────▼──────────────▼──────────────────▼──────────┐ │ │
-│  │  │           ClawGuard Config Engine                │ │ │
+│  │  │           BoltClaw Config Engine                │ │ │
 │  │  │      (reads/writes openclaw.json)                │ │ │
 │  │  └───────────────────┬─────────────────────────────┘ │ │
 │  └──────────────────────│──────────────────────────────┘ │
@@ -83,13 +83,13 @@ npm run dev   # Starts dashboard at localhost:5173, proxies API to :3000
 ## Project Structure
 
 ```
-clawguard/
+boltclaw/
 ├── docker/               # Hardened OpenClaw container + docker-compose
 │   ├── docker-compose.yml
 │   ├── Dockerfile.dashboard
 │   └── openclaw-defaults/ # Seed config using real OpenClaw schema
 ├── packages/
-│   ├── config-engine/    # Parse, validate, backup, and write openclaw.json + clawguard.json
+│   ├── config-engine/    # Parse, validate, backup, and write openclaw.json + boltclaw.json
 │   ├── skill-scanner/    # Static analysis - 15 patterns, 6 categories, risk scoring
 │   └── dashboard/        # React frontend + Express API (Setup Wizard, Scanner, Permissions, Audit Log)
 ├── tests/                # Playwright end-to-end tests (21 tests across 5 suites)
@@ -114,11 +114,11 @@ Visual grid showing current permission levels with colour-coded risk badges. Inc
 
 ### Audit Log
 
-Tracks every ClawGuard action: config reads, config writes, backup restores, and skill scans. Filterable by severity (Info/Warning/Danger), searchable by keyword, with expandable event details and a clear log button. Events auto-refresh every 10 seconds.
+Tracks every BoltClaw action: config reads, config writes, backup restores, and skill scans. Filterable by severity (Info/Warning/Danger), searchable by keyword, with expandable event details and a clear log button. Events auto-refresh every 10 seconds.
 
 ### Config Engine
 
-Reads and writes OpenClaw's real `openclaw.json` schema (validated against actual OpenClaw v2026.3.13) plus a `clawguard.json` sidecar for ClawGuard-specific settings. Automatic backup before every change. Bidirectional mapping between ClawGuard toggles and OpenClaw config values. Auto-migration from old formats.
+Reads and writes OpenClaw's real `openclaw.json` schema (validated against actual OpenClaw v2026.3.13) plus a `boltclaw.json` sidecar for BoltClaw-specific settings. Automatic backup before every change. Bidirectional mapping between BoltClaw toggles and OpenClaw config values. Auto-migration from old formats.
 
 ## Testing
 
@@ -150,11 +150,11 @@ OpenClaw detects config changes in real-time and hot-reloads without requiring a
 
 - **OpenClaw** - hardened with read-only filesystem, bridge network only, tmpfs for writable directories (tmp, canvas, cron, workspace, agents) with correct uid/gid ownership
 - **Ollama** - local LLM for testing without cloud dependencies
-- **ClawGuard Dashboard** - serves the UI and API, includes git for GitHub URL scanning
+- **BoltClaw Dashboard** - serves the UI and API, includes git for GitHub URL scanning
 
 ## Why This Matters
 
-ClawGuard exists because 40,000+ OpenClaw instances were exposed due to insecure defaults. When OpenClaw agents connected to the Moltbook social network, researchers found prompt injection vectors, mass impersonation, and agents acting beyond their owners' intent. ClawGuard's permission controls and skill scanning address exactly these failure modes.
+BoltClaw exists because 40,000+ OpenClaw instances were exposed due to insecure defaults. When OpenClaw agents connected to the Moltbook social network, researchers found prompt injection vectors, mass impersonation, and agents acting beyond their owners' intent. BoltClaw's permission controls and skill scanning address exactly these failure modes.
 
 ## Tech Stack
 

@@ -24,7 +24,7 @@ export const PROFILES: SecurityProfile[] = [
         gateway: { mode: "local", bind: "loopback", port: 18789, auth: { token: "" } },
         skills: { allowBundled: [] },
       },
-      clawguard: {
+      boltclaw: {
         security: { shell: "deny", filesystem: "deny", browser: "deny", network: "deny" },
         messaging: { allowlist: [] },
       },
@@ -44,7 +44,7 @@ export const PROFILES: SecurityProfile[] = [
         gateway: { mode: "local", bind: "loopback", port: 18789, auth: { token: "" } },
         skills: { allowBundled: ["*"] },
       },
-      clawguard: {
+      boltclaw: {
         security: { shell: "deny", filesystem: "ask", browser: "ask", network: "ask" },
         messaging: { allowlist: [] },
       },
@@ -64,7 +64,7 @@ export const PROFILES: SecurityProfile[] = [
         gateway: { mode: "local", bind: "loopback", port: 18789, auth: { token: "" } },
         skills: { allowBundled: ["*"] },
       },
-      clawguard: {
+      boltclaw: {
         security: { shell: "ask", filesystem: "allow", browser: "ask", network: "ask" },
         messaging: { allowlist: [] },
       },
@@ -84,7 +84,7 @@ export const PROFILES: SecurityProfile[] = [
         gateway: { mode: "local", bind: "loopback", port: 18789, auth: { token: "" } },
         skills: { allowBundled: [] },
       },
-      clawguard: {
+      boltclaw: {
         security: { shell: "deny", filesystem: "deny", browser: "deny", network: "deny" },
         messaging: { allowlist: [] },
       },

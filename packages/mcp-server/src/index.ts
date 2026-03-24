@@ -1,5 +1,3 @@
-#!/usr/bin/env node
-
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
@@ -16,13 +14,13 @@ import {
   restoreConfig,
   scoreConfig,
   PROFILES,
-} from "@clawguard/config-engine";
-import type { PermissionLevel, SandboxMode, GatewayBind } from "@clawguard/config-engine";
-import { scanSkill } from "@clawguard/skill-scanner";
+} from "@boltclaw/config-engine";
+import type { PermissionLevel, SandboxMode, GatewayBind } from "@boltclaw/config-engine";
+import { scanSkill } from "@boltclaw/skill-scanner";
 
 const server = new McpServer(
   {
-    name: "clawguard",
+    name: "boltclaw",
     version: "0.1.0",
   },
   {
@@ -94,7 +92,7 @@ server.registerTool(
   {
     title: "Get Security Config",
     description:
-      "Read the current OpenClaw + ClawGuard configuration and return the security score, " +
+      "Read the current OpenClaw + BoltClaw configuration and return the security score, " +
       "grade (A-F), and any findings. Shows permission levels (shell, filesystem, browser, network), " +
       "sandbox mode, gateway binding, and bundled skills status.",
     inputSchema: z.object({
@@ -114,11 +112,11 @@ server.registerTool(
         ``,
         `**Score:** ${score.score}/100 (Grade: ${score.grade})`,
         ``,
-        `### Permissions (ClawGuard)`,
-        `- Shell: ${config.clawguard.security.shell}`,
-        `- Filesystem: ${config.clawguard.security.filesystem}`,
-        `- Browser: ${config.clawguard.security.browser}`,
-        `- Network: ${config.clawguard.security.network}`,
+        `### Permissions (BoltClaw)`,
+        `- Shell: ${config.boltclaw.security.shell}`,
+        `- Filesystem: ${config.boltclaw.security.filesystem}`,
+        `- Browser: ${config.boltclaw.security.browser}`,
+        `- Network: ${config.boltclaw.security.network}`,
         ``,
         `### OpenClaw Settings`,
         `- Sandbox: ${config.openclaw.agents?.defaults?.sandbox?.mode ?? "not set"}`,
@@ -127,8 +125,8 @@ server.registerTool(
         `- Bundled skills: ${config.openclaw.skills?.allowBundled?.length ? config.openclaw.skills.allowBundled.join(", ") : "none"}`,
       ];
 
-      if (config.clawguard.messaging.allowlist.length > 0) {
-        lines.push(`- Messaging allowlist: ${config.clawguard.messaging.allowlist.join(", ")}`);
+      if (config.boltclaw.messaging.allowlist.length > 0) {
+        lines.push(`- Messaging allowlist: ${config.boltclaw.messaging.allowlist.join(", ")}`);
       }
 
       if (score.findings.length > 0) {
@@ -159,7 +157,7 @@ server.registerTool(
   {
     title: "Set Security Config",
     description:
-      "Update specific security settings in the ClawGuard/OpenClaw configuration. " +
+      "Update specific security settings in the BoltClaw/OpenClaw configuration. " +
       "Automatically backs up the current config before writing. " +
       "Returns the updated security score.",
     inputSchema: z.object({
@@ -179,10 +177,10 @@ server.registerTool(
     try {
       const config = await readConfig(configDir);
 
-      if (shell) config.clawguard.security.shell = shell;
-      if (filesystem) config.clawguard.security.filesystem = filesystem;
-      if (browser) config.clawguard.security.browser = browser;
-      if (network) config.clawguard.security.network = network;
+      if (shell) config.boltclaw.security.shell = shell;
+      if (filesystem) config.boltclaw.security.filesystem = filesystem;
+      if (browser) config.boltclaw.security.browser = browser;
+      if (network) config.boltclaw.security.network = network;
 
       if (sandboxMode) {
         if (!config.openclaw.agents) config.openclaw.agents = { defaults: { sandbox: { mode: sandboxMode } } };
@@ -280,7 +278,7 @@ server.registerTool(
     title: "List Config Backups",
     description:
       "List all available OpenClaw configuration backups. " +
-      "ClawGuard creates automatic backups before every config change.",
+      "BoltClaw creates automatic backups before every config change.",
     inputSchema: z.object({
       configDir: z
         .string()
@@ -488,7 +486,7 @@ server.registerTool(
 async function main() {
   const transport = new StdioServerTransport();
   await server.connect(transport);
-  console.error("ClawGuard MCP server running on stdio");
+  console.error("BoltClaw MCP server running on stdio");
 }
 
 main().catch((err) => {

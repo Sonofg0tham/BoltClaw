@@ -1,8 +1,8 @@
 import "dotenv/config";
 import express from "express";
 import helmet from "helmet";
-import { readConfig, writeConfig, listBackups, restoreConfig, scoreConfig, PROFILES } from "@clawguard/config-engine";
-import { scanSkill } from "@clawguard/skill-scanner";
+import { readConfig, writeConfig, listBackups, restoreConfig, scoreConfig, PROFILES } from "@boltclaw/config-engine";
+import { scanSkill } from "@boltclaw/skill-scanner";
 import { existsSync } from "node:fs";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -59,7 +59,7 @@ function logEvent(action: AuditEvent["action"], severity: AuditEvent["severity"]
   if (auditLog.length > MAX_AUDIT_EVENTS) auditLog.pop();
 }
 
-const SCAN_ROOT = process.env.CLAWGUARD_SCAN_ROOT || undefined;
+const SCAN_ROOT = process.env.BOLTCLAW_SCAN_ROOT || undefined;
 
 // Simple concurrency limiter for scans (prevents DoS via many parallel git clones)
 let activeScans = 0;
@@ -77,7 +77,7 @@ async function fetchGitHubSkill(url: string): Promise<{ tmpDir: string; scanPath
   const branch = match[2] || "main";
   const subPath = match[3] || "";
 
-  const tmpDir = await mkdtemp(join(tmpdir(), "clawguard-scan-"));
+  const tmpDir = await mkdtemp(join(tmpdir(), "boltclaw-scan-"));
 
   try {
     await execFileAsync("git", [
@@ -168,7 +168,7 @@ const CombinedConfigSchema = z.object({
       allowBundled: z.array(z.string()).optional(),
     }).optional(),
   }).passthrough(), // Allow unknown keys OpenClaw may have
-  clawguard: z.object({
+  boltclaw: z.object({
     security: z.object({
       shell: PermissionLevelSchema,
       filesystem: PermissionLevelSchema,
@@ -226,7 +226,7 @@ app.post("/api/config", async (req, res) => {
   try {
     await writeConfig(parsed.data, CONFIG_DIR);
     const score = scoreConfig(parsed.data);
-    logEvent("config_write", "warning", "Configuration updated", { keys: Object.keys(parsed.data.clawguard.security) });
+    logEvent("config_write", "warning", "Configuration updated", { keys: Object.keys(parsed.data.boltclaw.security) });
     res.json({ success: true, score });
   } catch (err) {
     console.error("Failed to write config:", err);
@@ -463,5 +463,5 @@ if (resolvedClientDir) {
 }
 
 app.listen(PORT, () => {
-  console.log(`ClawGuard dashboard running on http://localhost:${PORT}`);
+  console.log(`BoltClaw dashboard running on http://localhost:${PORT}`);
 });

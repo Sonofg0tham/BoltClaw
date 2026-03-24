@@ -3,7 +3,7 @@ import { SetupWizard } from "./pages/SetupWizard.js";
 import { PermissionDashboard } from "./pages/PermissionDashboard.js";
 import { SkillScanner } from "./pages/SkillScanner.js";
 import { AuditLog } from "./pages/AuditLog.js";
-import { ClawGuardLogo } from "./components/ClawGuardLogo.js";
+import { BoltClawLogo } from "./components/BoltClawLogo.js";
 
 const TABS = [
   {
@@ -76,11 +76,11 @@ export function App() {
                 transition: "filter 0.2s ease",
               }}
             >
-              <ClawGuardLogo size={36} />
+              <BoltClawLogo size={36} />
             </div>
             <div className="flex flex-col leading-none">
               <span className="font-bold text-[17px] tracking-tight text-slate-100">
-                Claw<span style={{ color: "#dc2626" }}>Guard</span>
+                Bolt<span style={{ color: "#dc2626" }}>Claw</span>
               </span>
               <span
                 className="text-[10px] font-mono tracking-widest uppercase mt-0.5"
@@ -150,7 +150,7 @@ export function App() {
         }}
       >
         <span style={{ color: "#334155" }}>
-          ClawGuard&nbsp;·&nbsp;Security control panel for AI agents&nbsp;·&nbsp;
+          BoltClaw&nbsp;·&nbsp;Security control panel for AI agents&nbsp;·&nbsp;
           <span style={{ color: "rgba(220,38,38,0.5)" }}>
             OpenClaw · NanoClaw · NemoClaw
           </span>

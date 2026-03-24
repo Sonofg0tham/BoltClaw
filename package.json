@@ -1,5 +1,5 @@
 {
-  "name": "clawguard",
+  "name": "boltclaw",
   "version": "0.1.0",
   "private": true,
   "description": "The security control panel for claw-based AI agents — config hardening, skill scanning, and risk assessment for OpenClaw, NanoClaw, and NemoClaw",
@@ -14,7 +14,7 @@
     "build": "npm run build --workspaces",
     "docker:up": "docker compose -f docker/docker-compose.yml up -d",
     "docker:down": "docker compose -f docker/docker-compose.yml down",
-    "docker:pull-model": "docker exec clawguard-ollama ollama pull llama3.2:1b",
+    "docker:pull-model": "docker exec boltclaw-ollama ollama pull llama3.2:1b",
     "test": "npx playwright test",
     "test:ui": "npx playwright test --ui"
   },

@@ -16,7 +16,7 @@ export function scoreConfig(config: CombinedConfig): ScoreResult {
   let score = 100;
   const findings: Finding[] = [];
 
-  // --- ClawGuard security toggles ---
+  // --- BoltClaw security toggles ---
   const permWeights: Record<string, number> = {
     shell: 30,
     filesystem: 20,
@@ -25,7 +25,7 @@ export function scoreConfig(config: CombinedConfig): ScoreResult {
   };
 
   for (const [key, weight] of Object.entries(permWeights)) {
-    const val = config.clawguard.security[key as keyof typeof config.clawguard.security];
+    const val = config.boltclaw.security[key as keyof typeof config.boltclaw.security];
     if (val === "allow") {
       score -= weight;
       findings.push({
@@ -85,8 +85,8 @@ export function scoreConfig(config: CombinedConfig): ScoreResult {
     });
   }
 
-  // --- ClawGuard: messaging allowlist ---
-  if (config.clawguard.messaging.allowlist.length === 0) {
+  // --- BoltClaw: messaging allowlist ---
+  if (config.boltclaw.messaging.allowlist.length === 0) {
     // No allowlist is secure (no one can message)
   }
 

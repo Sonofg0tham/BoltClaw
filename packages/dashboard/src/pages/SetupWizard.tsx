@@ -87,9 +87,9 @@ export function SetupWizard({ onComplete }: { onComplete?: () => void }) {
     if (!config) return;
     setConfig({
       ...config,
-      clawguard: {
-        ...config.clawguard,
-        security: { ...config.clawguard.security, [key]: value },
+      boltclaw: {
+        ...config.boltclaw,
+        security: { ...config.boltclaw.security, [key]: value },
       },
     });
   }
@@ -98,11 +98,11 @@ export function SetupWizard({ onComplete }: { onComplete?: () => void }) {
     if (!config || !allowlistInput.trim()) return;
     setConfig({
       ...config,
-      clawguard: {
-        ...config.clawguard,
+      boltclaw: {
+        ...config.boltclaw,
         messaging: {
-          ...config.clawguard.messaging,
-          allowlist: [...config.clawguard.messaging.allowlist, allowlistInput.trim()],
+          ...config.boltclaw.messaging,
+          allowlist: [...config.boltclaw.messaging.allowlist, allowlistInput.trim()],
         },
       },
     });
@@ -113,11 +113,11 @@ export function SetupWizard({ onComplete }: { onComplete?: () => void }) {
     if (!config) return;
     setConfig({
       ...config,
-      clawguard: {
-        ...config.clawguard,
+      boltclaw: {
+        ...config.boltclaw,
         messaging: {
-          ...config.clawguard.messaging,
-          allowlist: config.clawguard.messaging.allowlist.filter((i) => i !== item),
+          ...config.boltclaw.messaging,
+          allowlist: config.boltclaw.messaging.allowlist.filter((i) => i !== item),
         },
       },
     });
@@ -279,9 +279,9 @@ export function SetupWizard({ onComplete }: { onComplete?: () => void }) {
             <button onClick={addToAllowlist} className="btn-primary shrink-0">Add</button>
           </div>
 
-          {config.clawguard.messaging.allowlist.length > 0 ? (
+          {config.boltclaw.messaging.allowlist.length > 0 ? (
             <div className="space-y-2 mb-6">
-              {config.clawguard.messaging.allowlist.map((item) => (
+              {config.boltclaw.messaging.allowlist.map((item) => (
                 <div
                   key={item}
                   className="flex items-center justify-between rounded-xl px-4 py-2.5"
@@ -333,7 +333,7 @@ export function SetupWizard({ onComplete }: { onComplete?: () => void }) {
                 description={meta.description}
                 riskWhenAllowed={meta.riskWhenAllowed}
                 whatBreaksWhenDenied={meta.whatBreaksWhenDenied}
-                value={config.clawguard.security[meta.key as keyof typeof config.clawguard.security] || "deny"}
+                value={config.boltclaw.security[meta.key as keyof typeof config.boltclaw.security] || "deny"}
                 onChange={(v) => updateSecurity(meta.key, v)}
               />
             ))}
@@ -384,9 +384,9 @@ export function SetupWizard({ onComplete }: { onComplete?: () => void }) {
               <pre className="text-xs font-mono leading-relaxed mb-4" style={{ color: "#4ade80" }}>
                 {JSON.stringify(config.openclaw, null, 2)}
               </pre>
-              <p className="text-xs font-mono text-slate-500 mb-2">clawguard.json</p>
+              <p className="text-xs font-mono text-slate-500 mb-2">boltclaw.json</p>
               <pre className="text-xs font-mono leading-relaxed" style={{ color: "#c084fc" }}>
-                {JSON.stringify(config.clawguard, null, 2)}
+                {JSON.stringify(config.boltclaw, null, 2)}
               </pre>
             </div>
           </div>

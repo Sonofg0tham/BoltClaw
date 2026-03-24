@@ -1,6 +1,6 @@
 {
   "mcpServers": {
-    "clawguard": {
+    "boltclaw": {
       "command": "node",
       "args": ["packages/mcp-server/dist/index.js"],
       "env": {}

@@ -1,5 +1,5 @@
 {
-  "name": "@clawguard/dashboard",
+  "name": "@boltclaw/dashboard",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -9,8 +9,8 @@
     "preview": "node dist/server/server.js"
   },
   "dependencies": {
-    "@clawguard/config-engine": "*",
-    "@clawguard/skill-scanner": "*",
+    "@boltclaw/config-engine": "*",
+    "@boltclaw/skill-scanner": "*",
     "dotenv": "^17.3.1",
     "express": "^5.1.0",
     "helmet": "^8.1.0",

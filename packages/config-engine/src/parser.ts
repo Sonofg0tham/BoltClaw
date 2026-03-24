@@ -4,11 +4,11 @@ import { existsSync, mkdirSync } from "node:fs";
 import {
   type CombinedConfig,
   type OpenClawConfig,
-  type ClawGuardConfig,
+  type BoltClawConfig,
   DEFAULT_OPENCLAW_CONFIG,
-  DEFAULT_CLAWGUARD_CONFIG,
+  DEFAULT_BOLTCLAW_CONFIG,
 } from "./schema.js";
-import { applyClawGuardToOpenClaw, inferClawGuardFromOpenClaw } from "./mapper.js";
+import { applyBoltClawToOpenClaw, inferBoltClawFromOpenClaw } from "./mapper.js";
 
 function resolveConfigDir(): string {
   if (process.env.OPENCLAW_CONFIG_PATH) {
@@ -22,8 +22,8 @@ function openclawPath(configDir: string): string {
   return join(configDir, "openclaw.json");
 }
 
-function clawguardPath(configDir: string): string {
-  return join(configDir, "clawguard.json");
+function boltclawPath(configDir: string): string {
+  return join(configDir, "boltclaw.json");
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -52,10 +52,10 @@ function deepMerge<T>(base: T, override: any): T {
 }
 
 /**
- * Detect if a parsed JSON object is the old ClawGuard format
+ * Detect if a parsed JSON object is the old BoltClaw format
  * (has security.shell, messaging.allowlist, etc. at root)
  */
-function isOldClawGuardFormat(parsed: Record<string, unknown>): boolean {
+function isOldBoltClawFormat(parsed: Record<string, unknown>): boolean {
   return (
     typeof parsed.security === "object" &&
     parsed.security !== null &&
@@ -64,12 +64,12 @@ function isOldClawGuardFormat(parsed: Record<string, unknown>): boolean {
 }
 
 /**
- * Migrate old ClawGuard format to the new split format.
- * Returns the ClawGuard sidecar config extracted from the old format.
+ * Migrate old BoltClaw format to the new split format.
+ * Returns the BoltClaw sidecar config extracted from the old format.
  */
 function migrateOldFormat(parsed: Record<string, unknown>): {
   openclaw: OpenClawConfig;
-  clawguard: ClawGuardConfig;
+  boltclaw: BoltClawConfig;
 } {
   const old = parsed as {
     security?: { shell?: string; filesystem?: string; browser?: string; network?: string };
@@ -79,12 +79,12 @@ function migrateOldFormat(parsed: Record<string, unknown>): {
     network?: { expose?: boolean; port?: number };
   };
 
-  const clawguard: ClawGuardConfig = {
+  const boltclaw: BoltClawConfig = {
     security: {
-      shell: (old.security?.shell as ClawGuardConfig["security"]["shell"]) || "deny",
-      filesystem: (old.security?.filesystem as ClawGuardConfig["security"]["filesystem"]) || "deny",
-      browser: (old.security?.browser as ClawGuardConfig["security"]["browser"]) || "deny",
-      network: (old.security?.network as ClawGuardConfig["security"]["network"]) || "deny",
+      shell: (old.security?.shell as BoltClawConfig["security"]["shell"]) || "deny",
+      filesystem: (old.security?.filesystem as BoltClawConfig["security"]["filesystem"]) || "deny",
+      browser: (old.security?.browser as BoltClawConfig["security"]["browser"]) || "deny",
+      network: (old.security?.network as BoltClawConfig["security"]["network"]) || "deny",
     },
     messaging: {
       allowlist: old.messaging?.allowlist || [],
@@ -95,15 +95,15 @@ function migrateOldFormat(parsed: Record<string, unknown>): {
     ...DEFAULT_OPENCLAW_CONFIG,
     gateway: {
       ...DEFAULT_OPENCLAW_CONFIG.gateway,
-      bind: clawguard.security.network === "allow" ? "lan" : "loopback",
-      mode: clawguard.security.network === "allow" ? "remote" : "local",
+      bind: boltclaw.security.network === "allow" ? "lan" : "loopback",
+      mode: boltclaw.security.network === "allow" ? "remote" : "local",
     },
     skills: {
       allowBundled: old.skills?.allowBundled ? ["*"] : [],
     },
   };
 
-  return { openclaw, clawguard };
+  return { openclaw, boltclaw };
 }
 
 export async function readConfig(
@@ -118,14 +118,14 @@ export async function readConfig(
     const parsed = JSON.parse(raw) as Record<string, unknown>;
 
     // Auto-detect and migrate old format
-    if (isOldClawGuardFormat(parsed)) {
+    if (isOldBoltClawFormat(parsed)) {
       const migrated = migrateOldFormat(parsed);
       // Write both new files (back up old one first)
       await backupFile(ocPath);
       await writeFile(ocPath, JSON.stringify(migrated.openclaw, null, 2), "utf-8");
-      const scPath = clawguardPath(configDir);
-      await writeFile(scPath, JSON.stringify(migrated.clawguard, null, 2), "utf-8");
-      return { openclaw: migrated.openclaw, clawguard: migrated.clawguard };
+      const scPath = boltclawPath(configDir);
+      await writeFile(scPath, JSON.stringify(migrated.boltclaw, null, 2), "utf-8");
+      return { openclaw: migrated.openclaw, boltclaw: migrated.boltclaw };
     }
 
     openclaw = deepMerge(DEFAULT_OPENCLAW_CONFIG, parsed);
@@ -133,21 +133,21 @@ export async function readConfig(
     openclaw = { ...DEFAULT_OPENCLAW_CONFIG };
   }
 
-  // Read ClawGuard sidecar config
-  let clawguard: ClawGuardConfig;
-  const scPath = clawguardPath(configDir);
+  // Read BoltClaw sidecar config
+  let boltclaw: BoltClawConfig;
+  const scPath = boltclawPath(configDir);
 
   try {
     const raw = await readFile(scPath, "utf-8");
     const parsed = JSON.parse(raw);
-    clawguard = deepMerge(DEFAULT_CLAWGUARD_CONFIG, parsed);
+    boltclaw = deepMerge(DEFAULT_BOLTCLAW_CONFIG, parsed);
   } catch {
     // No sidecar yet — infer from OpenClaw config
-    const inferred = inferClawGuardFromOpenClaw(openclaw);
-    clawguard = deepMerge(DEFAULT_CLAWGUARD_CONFIG, inferred);
+    const inferred = inferBoltClawFromOpenClaw(openclaw);
+    boltclaw = deepMerge(DEFAULT_BOLTCLAW_CONFIG, inferred);
   }
 
-  return { openclaw, clawguard };
+  return { openclaw, boltclaw };
 }
 
 export async function writeConfig(
@@ -160,17 +160,17 @@ export async function writeConfig(
   }
 
   const ocPath = openclawPath(dir);
-  const scPath = clawguardPath(dir);
+  const scPath = boltclawPath(dir);
 
   // Back up both files
   await backupFile(ocPath);
   await backupFile(scPath);
 
-  // Apply ClawGuard mappings to OpenClaw config before writing
-  const openclawOut = applyClawGuardToOpenClaw(combined);
+  // Apply BoltClaw mappings to OpenClaw config before writing
+  const openclawOut = applyBoltClawToOpenClaw(combined);
 
   await writeFile(ocPath, JSON.stringify(openclawOut, null, 2), "utf-8");
-  await writeFile(scPath, JSON.stringify(combined.clawguard, null, 2), "utf-8");
+  await writeFile(scPath, JSON.stringify(combined.boltclaw, null, 2), "utf-8");
 }
 
 async function backupFile(filePath: string): Promise<string | null> {
@@ -180,7 +180,7 @@ async function backupFile(filePath: string): Promise<string | null> {
   if (!existsSync(backupDir)) {
     mkdirSync(backupDir, { recursive: true });
   }
-  const basename = filePath.endsWith("clawguard.json") ? "clawguard" : "openclaw";
+  const basename = filePath.endsWith("boltclaw.json") ? "boltclaw" : "openclaw";
   const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
   const backupPath = join(backupDir, `${basename}-${timestamp}.json`);
   await copyFile(filePath, backupPath);
@@ -191,7 +191,7 @@ export async function backupConfig(
   configDir: string = resolveConfigDir(),
 ): Promise<string | null> {
   const ocBackup = await backupFile(openclawPath(configDir));
-  await backupFile(clawguardPath(configDir));
+  await backupFile(boltclawPath(configDir));
   return ocBackup;
 }
 
@@ -218,11 +218,11 @@ export async function restoreConfig(
   // Restore OpenClaw config
   await copyFile(backupPath, openclawPath(configDir));
 
-  // Try to restore matching ClawGuard backup
-  const clawguardBackup = backupFilename.replace("openclaw-", "clawguard-");
-  const clawguardBackupPath = join(backupDir, clawguardBackup);
-  if (existsSync(clawguardBackupPath)) {
-    await copyFile(clawguardBackupPath, clawguardPath(configDir));
+  // Try to restore matching BoltClaw backup
+  const boltclawBackup = backupFilename.replace("openclaw-", "boltclaw-");
+  const boltclawBackupPath = join(backupDir, boltclawBackup);
+  if (existsSync(boltclawBackupPath)) {
+    await copyFile(boltclawBackupPath, boltclawPath(configDir));
   }
 }
 

@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 
-export function ClawGuardLogo({ className = "", size = 40 }: { className?: string; size?: number }) {
+export function BoltClawLogo({ className = "", size = 40 }: { className?: string; size?: number }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -42,7 +42,7 @@ export function ClawGuardLogo({ className = "", size = 40 }: { className?: strin
       ref={canvasRef}
       className={className}
       style={{ width: size, height: size }}
-      aria-label="ClawGuard"
+      aria-label="BoltClaw"
     />
   );
 }

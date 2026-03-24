@@ -1,6 +1,6 @@
 export {
   type OpenClawConfig,
-  type ClawGuardConfig,
+  type BoltClawConfig,
   type CombinedConfig,
   type PermissionLevel,
   type SecuritySettingKey,
@@ -11,7 +11,7 @@ export {
   type GatewayBind,
   SECURITY_SETTINGS_META,
   DEFAULT_OPENCLAW_CONFIG,
-  DEFAULT_CLAWGUARD_CONFIG,
+  DEFAULT_BOLTCLAW_CONFIG,
   DEFAULT_COMBINED_CONFIG,
 } from "./schema.js";
 
@@ -28,8 +28,8 @@ export { scoreConfig, type ScoreResult, type Finding } from "./scorer.js";
 export { PROFILES, type SecurityProfile } from "./profiles.js";
 
 export {
-  applyClawGuardToOpenClaw,
-  inferClawGuardFromOpenClaw,
+  applyBoltClawToOpenClaw,
+  inferBoltClawFromOpenClaw,
   sandboxModeToLabel,
   sandboxModeSeverity,
 } from "./mapper.js";

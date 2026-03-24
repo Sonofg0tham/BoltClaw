@@ -2,7 +2,7 @@ M  packages/dashboard/index.html
 A  packages/dashboard/public/logo.png
 M  packages/dashboard/src/App.tsx
 A  packages/dashboard/src/assets/logo.png
-A  packages/dashboard/src/components/ClawGuardLogo.tsx
+A  packages/dashboard/src/components/BoltClawLogo.tsx
 M  packages/dashboard/src/components/ErrorBanner.tsx
 M  packages/dashboard/src/components/PermissionToggle.tsx
 M  packages/dashboard/src/components/RiskBadge.tsx

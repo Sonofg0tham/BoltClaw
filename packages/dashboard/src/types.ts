@@ -1,5 +1,5 @@
 // Shared frontend types — single source of truth
-// Backend canonical types live in @clawguard/config-engine; these mirror them for the UI.
+// Backend canonical types live in @boltclaw/config-engine; these mirror them for the UI.
 
 export type PermissionLevel = "deny" | "ask" | "allow";
 export type Severity = "safe" | "caution" | "warning" | "danger";
@@ -15,7 +15,7 @@ export interface OpenClawConfig {
   [key: string]: unknown;
 }
 
-export interface ClawGuardConfig {
+export interface BoltClawConfig {
   security: {
     shell: PermissionLevel;
     filesystem: PermissionLevel;
@@ -27,7 +27,7 @@ export interface ClawGuardConfig {
 
 export interface CombinedConfig {
   openclaw: OpenClawConfig;
-  clawguard: ClawGuardConfig;
+  boltclaw: BoltClawConfig;
 }
 
 export interface SecuritySettingMeta {
