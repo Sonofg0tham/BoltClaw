@@ -1,48 +1,34 @@
-import { useEffect, useRef } from "react";
-
 export function BoltClawLogo({ className = "", size = 40 }: { className?: string; size?: number }) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-
-    const img = new Image();
-    img.onload = () => {
-      canvas.width = img.naturalWidth;
-      canvas.height = img.naturalHeight;
-      ctx.drawImage(img, 0, 0);
-
-      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-      const data = imageData.data;
-
-      for (let i = 0; i < data.length; i += 4) {
-        const r = data[i], g = data[i + 1], b = data[i + 2];
-        const min = Math.min(r, g, b);
-        const max = Math.max(r, g, b);
-        // Saturation: 0 = grey/white, 1 = fully coloured
-        const saturation = max > 0 ? (max - min) / max : 0;
-        // Only touch low-saturation (grey/white) pixels with high brightness
-        if (min > 200 && saturation < 0.15) {
-          // Smooth fade — brighter pixels become more transparent
-          const brightness = min / 255;
-          data[i + 3] = Math.round(255 * (1 - brightness) * 6);
-        }
-      }
-
-      ctx.putImageData(imageData, 0, 0);
-    };
-    img.src = "/logo.png";
-  }, []);
-
   return (
-    <canvas
-      ref={canvasRef}
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 48 48"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
       className={className}
-      style={{ width: size, height: size }}
       aria-label="BoltClaw"
-    />
+    >
+      <defs>
+        <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+          <feGaussianBlur stdDeviation="2" result="blur" />
+          <feComposite in="SourceGraphic" in2="blur" operator="over" />
+        </filter>
+      </defs>
+      {/* Three red claw slashes */}
+      <path 
+        d="M12 8L4 32M24 6L16 34M36 4L28 36" 
+        stroke="#ef4444" 
+        strokeWidth="4" 
+        strokeLinecap="round" 
+        filter="url(#glow)"
+        opacity="0.8"
+      />
+      {/* Sharp white lightning bolt cutting across */}
+      <path 
+        d="M42 16L20 28V22H6L28 10V16L42 16Z" 
+        fill="white" 
+      />
+    </svg>
   );
 }

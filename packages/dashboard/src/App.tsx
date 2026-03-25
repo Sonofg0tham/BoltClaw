@@ -72,19 +72,19 @@ export function App() {
             <div
               className="relative flex-shrink-0"
               style={{
-                filter: "drop-shadow(0 0 8px rgba(220,38,38,0.5))",
+                filter: "drop-shadow(0 0 12px rgba(239, 68, 68, 0.4))",
                 transition: "filter 0.2s ease",
               }}
             >
-              <BoltClawLogo size={36} />
+              <BoltClawLogo size={34} />
             </div>
-            <div className="flex flex-col leading-none">
-              <span className="font-bold text-[17px] tracking-tight text-slate-100">
-                Bolt<span style={{ color: "#dc2626" }}>Claw</span>
+            <div className="flex flex-col leading-none" style={{ fontFamily: "'Outfit', sans-serif" }}>
+              <span className="font-bold text-[19px] tracking-tight text-slate-50">
+                Bolt<span style={{ color: "#ef4444" }}>Claw</span>
               </span>
               <span
-                className="text-[10px] font-mono tracking-widest uppercase mt-0.5"
-                style={{ color: "rgba(220,38,38,0.7)", letterSpacing: "0.12em" }}
+                className="text-[9px] font-mono tracking-[0.15em] uppercase mt-1"
+                style={{ color: "rgba(239, 68, 68, 0.8)", opacity: 0.8 }}
               >
                 Security Control Panel
               </span>
