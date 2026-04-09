@@ -12,5 +12,5 @@
     "composite": true
   },
   "include": ["src"],
-  "exclude": ["src/server.ts"]
+  "exclude": ["src/server.ts", "src/validation.ts", "src/**/*.test.ts"]
 }

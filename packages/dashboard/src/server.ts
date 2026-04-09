@@ -6,11 +6,12 @@ import { scanSkill } from "@boltclaw/skill-scanner";
 import { existsSync } from "node:fs";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join, resolve, normalize, dirname, sep } from "node:path";
+import { join, resolve, dirname, sep } from "node:path";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { z } from "zod";
 import multer from "multer";
+import { ScanRequestSchema, validateLocalScanPath, SCAN_ROOT } from "./validation.js";
 
 const execFileAsync = promisify(execFile);
 const upload = multer({ dest: tmpdir() });
@@ -59,7 +60,7 @@ function logEvent(action: AuditEvent["action"], severity: AuditEvent["severity"]
   if (auditLog.length > MAX_AUDIT_EVENTS) auditLog.pop();
 }
 
-const SCAN_ROOT = process.env.BOLTCLAW_SCAN_ROOT || undefined;
+console.log(`BoltClaw scan root: ${SCAN_ROOT}`);
 
 // Simple concurrency limiter for scans (prevents DoS via many parallel git clones)
 let activeScans = 0;
@@ -181,18 +182,6 @@ const CombinedConfigSchema = z.object({
   }),
 });
 
-const ScanRequestSchema = z.object({
-  path: z
-    .string()
-    .min(1, "Path must not be empty")
-    .refine((p) => {
-      // Allow GitHub URLs
-      if (p.startsWith("https://github.com/")) return true;
-      // Block path traversal and injection for local paths
-      return !p.includes("..") && !/[;&|`$]/.test(p);
-    }, "Invalid path or URL"),
-});
-
 const RestoreRequestSchema = z.object({
   filename: z
     .string()
@@ -305,22 +294,20 @@ app.post("/api/scan", async (req, res) => {
       return;
     }
   } else {
-    // Local path validation
-    if (SCAN_ROOT) {
-      const resolved = resolve(normalize(skillPath));
-      const root = resolve(normalize(SCAN_ROOT));
-      if (!resolved.startsWith(root + sep) && resolved !== root) {
-        activeScans--;
-        res.status(400).json({ error: "Scan path is outside the allowed directory" });
-        return;
-      }
+    // Local path validation: enforce SCAN_ROOT, block sensitive patterns,
+    // and use the fully-resolved absolute path for the actual scan.
+    const check = validateLocalScanPath(skillPath);
+    if (!check.ok) {
+      activeScans--;
+      res.status(400).json({ error: check.error });
+      return;
     }
-    if (!existsSync(skillPath)) {
+    if (!existsSync(check.resolved)) {
       activeScans--;
       res.status(400).json({ error: `Path does not exist: ${skillPath}` });
       return;
     }
-    scanTarget = skillPath;
+    scanTarget = check.resolved;
   }
 
   try {
