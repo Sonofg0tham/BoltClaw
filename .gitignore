@@ -10,3 +10,4 @@ test-results/
 playwright-report/
 *.tsbuildinfo
 docker/openclaw-defaults/backups/
+c:tmp*
