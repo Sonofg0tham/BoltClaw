@@ -16,7 +16,8 @@
     "docker:down": "docker compose -f docker/docker-compose.yml down",
     "docker:pull-model": "docker exec boltclaw-ollama ollama pull llama3.2:1b",
     "test": "npx playwright test",
-    "test:ui": "npx playwright test --ui"
+    "test:ui": "npx playwright test --ui",
+    "test:unit": "npx tsx --test packages/dashboard/src/server.test.ts"
   },
   "engines": {
     "node": ">=22.0.0"

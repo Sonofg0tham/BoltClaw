@@ -4,12 +4,13 @@ import helmet from "helmet";
 import { readConfig, writeConfig, listBackups, restoreConfig, scoreConfig, PROFILES } from "@boltclaw/config-engine";
 import { scanSkill } from "@boltclaw/skill-scanner";
 import { existsSync, mkdirSync } from "node:fs";
-import { mkdtemp, rm, readFile, writeFile, appendFile, truncate } from "node:fs/promises";
+import { mkdtemp, rm, readFile, writeFile, appendFile, truncate, readdir, stat } from "node:fs/promises";
 import { tmpdir, homedir } from "node:os";
 import { join, resolve, dirname, sep } from "node:path";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { randomBytes, timingSafeEqual } from "node:crypto";
+import { fileURLToPath } from "node:url";
 import { z } from "zod";
 import multer from "multer";
 import { ScanRequestSchema, validateLocalScanPath, SCAN_ROOT } from "./validation.js";
@@ -185,6 +186,75 @@ const MAX_CONCURRENT_SCANS = 3;
 
 const GITHUB_URL_RE = /^https:\/\/github\.com\/[\w.-]+\/[\w.-]+(\/tree\/[\w.-]+\/([\w./-]+))?$/;
 
+// Hard caps to prevent DoS via giant-repo cloning.
+// 50 MB covers any realistic skill repo; 10k files covers any realistic skill tree.
+export const CLONE_MAX_BYTES = 50 * 1024 * 1024;
+export const CLONE_MAX_FILES = 10_000;
+
+/**
+ * Build the git clone command used by fetchGitHubSkill.
+ * Exported so tests can assert the safety flags are present without shelling out.
+ *
+ * Safety flags:
+ *   -c http.followRedirects=false   don't follow redirects to unknown hosts
+ *   -c protocol.version=2           modern, faster protocol
+ *   --depth 1                       shallow, no history
+ *   --single-branch                 only the requested branch's tip
+ *   --no-tags                       skip tag objects
+ *   --filter=blob:limit=10m         blobs over 10 MB are fetched lazily (server-side filter)
+ */
+export function buildCloneArgs(repo: string, branch: string, tmpDir: string): string[] {
+  return [
+    "-c", "http.followRedirects=false",
+    "-c", "protocol.version=2",
+    "clone",
+    "--depth", "1",
+    "--single-branch",
+    "--no-tags",
+    "--filter=blob:limit=10m",
+    "--branch", branch,
+    `https://github.com/${repo}.git`,
+    tmpDir,
+  ];
+}
+
+/**
+ * Walk a directory and return total byte size and file count.
+ * Skips the .git directory to measure actual repo payload.
+ */
+async function measureTree(dir: string): Promise<{ bytes: number; files: number }> {
+  let bytes = 0;
+  let files = 0;
+  const stack: string[] = [dir];
+  while (stack.length) {
+    const current = stack.pop()!;
+    let entries;
+    try {
+      entries = await readdir(current, { withFileTypes: true });
+    } catch {
+      continue;
+    }
+    for (const entry of entries) {
+      if (entry.name === ".git") continue;
+      const full = join(current, entry.name);
+      if (entry.isDirectory()) {
+        stack.push(full);
+      } else if (entry.isFile()) {
+        files++;
+        if (files > CLONE_MAX_FILES) return { bytes, files };
+        try {
+          const s = await stat(full);
+          bytes += s.size;
+          if (bytes > CLONE_MAX_BYTES) return { bytes, files };
+        } catch {
+          // ignore unreadable entries
+        }
+      }
+    }
+  }
+  return { bytes, files };
+}
+
 async function fetchGitHubSkill(url: string): Promise<{ tmpDir: string; scanPath: string }> {
   const match = url.match(/^https:\/\/github\.com\/([\w.-]+\/[\w.-]+)(?:\/tree\/([^/]+)\/(.+))?$/);
   if (!match) throw new Error("Invalid GitHub URL format");
@@ -196,14 +266,28 @@ async function fetchGitHubSkill(url: string): Promise<{ tmpDir: string; scanPath
   const tmpDir = await mkdtemp(join(tmpdir(), "boltclaw-scan-"));
 
   try {
-    await execFileAsync("git", [
-      "clone", "--depth", "1", "--branch", branch,
-      `https://github.com/${repo}.git`, tmpDir,
-    ], { timeout: 30000 });
+    await execFileAsync("git", buildCloneArgs(repo, branch, tmpDir), {
+      timeout: 30000,
+      // GIT_TERMINAL_PROMPT=0 stops git from ever prompting for credentials,
+      // which would otherwise hang the server process until the 30s timeout.
+      env: { ...process.env, GIT_TERMINAL_PROMPT: "0" },
+    });
   } catch (err) {
     await rm(tmpDir, { recursive: true, force: true });
     console.error("Failed to clone repository:", err);
     throw new Error("Failed to clone repository");
+  }
+
+  // Enforce size caps after clone. If the repo slipped past the server-side blob
+  // filter (e.g. lots of small files), we still refuse to scan it.
+  const { bytes, files } = await measureTree(tmpDir);
+  if (bytes > CLONE_MAX_BYTES) {
+    await rm(tmpDir, { recursive: true, force: true });
+    throw new Error(`Repository exceeds ${CLONE_MAX_BYTES} byte cap (measured ${bytes})`);
+  }
+  if (files > CLONE_MAX_FILES) {
+    await rm(tmpDir, { recursive: true, force: true });
+    throw new Error(`Repository exceeds ${CLONE_MAX_FILES} file cap (measured ${files})`);
   }
 
   const scanPath = subPath ? join(tmpDir, subPath) : tmpDir;
@@ -590,7 +674,19 @@ if (resolvedClientDir) {
   });
 }
 
-app.listen(PORT, () => {
-  console.log(`BoltClaw dashboard running on http://localhost:${PORT}`);
-  console.log(`  Authenticated URL: http://localhost:${PORT}?token=${API_TOKEN}`);
-});
+// Only listen when this file is the entry point. Importing server.ts from a
+// unit test (to reach helpers like buildCloneArgs) must not bind the port.
+const isEntryPoint = (() => {
+  try {
+    return process.argv[1] === fileURLToPath(import.meta.url);
+  } catch {
+    return false;
+  }
+})();
+
+if (isEntryPoint) {
+  app.listen(PORT, () => {
+    console.log(`BoltClaw dashboard running on http://localhost:${PORT}`);
+    console.log(`  Authenticated URL: http://localhost:${PORT}?token=${API_TOKEN}`);
+  });
+}
