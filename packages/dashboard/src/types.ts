@@ -79,6 +79,7 @@ export interface AuditEvent {
   timestamp: string;
   action: "config_read" | "config_write" | "config_restore" | "scan" | "profile_apply";
   severity: "info" | "warning" | "danger";
+  source: "system" | "user";
   summary: string;
   details?: Record<string, unknown>;
 }

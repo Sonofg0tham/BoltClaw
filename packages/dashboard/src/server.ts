@@ -4,7 +4,7 @@ import helmet from "helmet";
 import { readConfig, writeConfig, listBackups, restoreConfig, scoreConfig, PROFILES } from "@boltclaw/config-engine";
 import { scanSkill } from "@boltclaw/skill-scanner";
 import { existsSync, mkdirSync } from "node:fs";
-import { mkdtemp, rm, readFile, writeFile } from "node:fs/promises";
+import { mkdtemp, rm, readFile, writeFile, appendFile, truncate } from "node:fs/promises";
 import { tmpdir, homedir } from "node:os";
 import { join, resolve, dirname, sep } from "node:path";
 import { execFile } from "node:child_process";
@@ -101,19 +101,56 @@ app.use("/api", (req, res, next) => {
   next();
 });
 
-// --- Audit Log (in-memory) ---
+// --- Audit Log (persisted to JSONL) ---
 
 interface AuditEvent {
   id: string;
   timestamp: string;
   action: "config_read" | "config_write" | "config_restore" | "scan" | "profile_apply";
   severity: "info" | "warning" | "danger";
+  source: "system" | "user";
   summary: string;
   details?: Record<string, unknown>;
 }
 
+const AUDIT_FILE = join(homedir(), ".openclaw", "boltclaw-audit.jsonl");
 const auditLog: AuditEvent[] = [];
 const MAX_AUDIT_EVENTS = 500;
+
+// Load persisted audit events on startup
+async function loadAuditLog(): Promise<void> {
+  try {
+    const raw = await readFile(AUDIT_FILE, "utf-8");
+    const lines = raw.trim().split("\n").filter(Boolean);
+    // Take last MAX_AUDIT_EVENTS lines, newest first
+    const events = lines
+      .slice(-MAX_AUDIT_EVENTS)
+      .reverse()
+      .map((line) => {
+        try { return JSON.parse(line) as AuditEvent; }
+        catch { return null; }
+      })
+      .filter((e): e is AuditEvent => e !== null);
+    auditLog.push(...events);
+  } catch {
+    // File doesn't exist yet, start fresh
+  }
+}
+
+await loadAuditLog();
+
+/** Redact sensitive fields before they hit the audit log. */
+function redactDetails(details?: Record<string, unknown>): Record<string, unknown> | undefined {
+  if (!details) return details;
+  const redacted = { ...details };
+  const sensitiveKeys = ["token", "api_token", "apiToken", "secret", "password"];
+  for (const key of Object.keys(redacted)) {
+    if (sensitiveKeys.some((s) => key.toLowerCase().includes(s))) {
+      redacted[key] = "[REDACTED]";
+    }
+  }
+  return redacted;
+}
 
 function logEvent(action: AuditEvent["action"], severity: AuditEvent["severity"], summary: string, details?: Record<string, unknown>) {
   const event: AuditEvent = {
@@ -121,11 +158,21 @@ function logEvent(action: AuditEvent["action"], severity: AuditEvent["severity"]
     timestamp: new Date().toISOString(),
     action,
     severity,
+    source: "system",
     summary,
-    details,
+    details: redactDetails(details),
   };
   auditLog.unshift(event);
   if (auditLog.length > MAX_AUDIT_EVENTS) auditLog.pop();
+
+  // Persist to disk (fire-and-forget, never crash the server)
+  const auditDir = dirname(AUDIT_FILE);
+  if (!existsSync(auditDir)) {
+    mkdirSync(auditDir, { recursive: true });
+  }
+  appendFile(AUDIT_FILE, JSON.stringify(event) + "\n").catch((err) => {
+    console.error("Failed to write audit event to disk:", err);
+  });
 }
 
 console.log(`BoltClaw scan root: ${SCAN_ROOT}`);
@@ -498,8 +545,16 @@ app.get("/api/audit", (_req, res) => {
   res.json({ events: auditLog });
 });
 
-app.delete("/api/audit", (_req, res) => {
+app.delete("/api/audit", async (_req, res) => {
   auditLog.length = 0;
+  // Truncate the on-disk file too
+  try {
+    if (existsSync(AUDIT_FILE)) {
+      await truncate(AUDIT_FILE, 0);
+    }
+  } catch (err) {
+    console.error("Failed to truncate audit log file:", err);
+  }
   res.json({ success: true });
 });
 
