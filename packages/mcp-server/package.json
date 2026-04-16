@@ -1,7 +1,7 @@
 {
   "name": "boltclaw",
   "version": "0.2.0",
-  "description": "Security control panel for OpenClaw, NanoClaw and NemoClaw AI agents — config hardening, skill scanning, and risk assessment via MCP",
+  "description": "Security control panel for OpenClaw, NanoClaw and NemoClaw AI agents - config hardening, skill scanning, and risk assessment via MCP",
   "type": "module",
   "main": "dist/index.js",
   "bin": {
