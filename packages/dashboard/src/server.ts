@@ -3,12 +3,13 @@ import express from "express";
 import helmet from "helmet";
 import { readConfig, writeConfig, listBackups, restoreConfig, scoreConfig, PROFILES } from "@boltclaw/config-engine";
 import { scanSkill } from "@boltclaw/skill-scanner";
-import { existsSync } from "node:fs";
-import { mkdtemp, rm } from "node:fs/promises";
-import { tmpdir } from "node:os";
+import { existsSync, mkdirSync } from "node:fs";
+import { mkdtemp, rm, readFile, writeFile } from "node:fs/promises";
+import { tmpdir, homedir } from "node:os";
 import { join, resolve, dirname, sep } from "node:path";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
+import { randomBytes, timingSafeEqual } from "node:crypto";
 import { z } from "zod";
 import multer from "multer";
 import { ScanRequestSchema, validateLocalScanPath, SCAN_ROOT } from "./validation.js";
@@ -32,6 +33,73 @@ app.use(helmet({
 app.use(express.json({ limit: "1mb" }));
 
 const PORT = parseInt(process.env.PORT || "3000", 10);
+
+// --- API Token Authentication ---
+
+const TOKEN_DIR = join(homedir(), ".openclaw");
+const TOKEN_FILE = join(TOKEN_DIR, "boltclaw-token");
+
+async function resolveApiToken(): Promise<string> {
+  // Use env var if explicitly set
+  if (process.env.BOLTCLAW_API_TOKEN) {
+    return process.env.BOLTCLAW_API_TOKEN;
+  }
+
+  // Try to read existing token from disk
+  try {
+    const existing = await readFile(TOKEN_FILE, "utf-8");
+    const trimmed = existing.trim();
+    if (trimmed.length > 0) return trimmed;
+  } catch {
+    // File doesn't exist yet, generate a new token
+  }
+
+  // Generate a new random token
+  const token = randomBytes(32).toString("hex");
+  if (!existsSync(TOKEN_DIR)) {
+    mkdirSync(TOKEN_DIR, { recursive: true, mode: 0o700 });
+  }
+  await writeFile(TOKEN_FILE, token, { mode: 0o600 });
+  return token;
+}
+
+const API_TOKEN = await resolveApiToken();
+console.log(`BoltClaw API token: ${API_TOKEN}`);
+console.log(`  (also saved to ${TOKEN_FILE})`);
+
+/**
+ * Constant-time token comparison to prevent timing attacks.
+ */
+function tokenMatches(provided: string): boolean {
+  try {
+    const a = Buffer.from(provided, "utf-8");
+    const b = Buffer.from(API_TOKEN, "utf-8");
+    if (a.length !== b.length) return false;
+    return timingSafeEqual(a, b);
+  } catch {
+    return false;
+  }
+}
+
+// Auth middleware: require token on all /api/* routes except /api/health
+app.use("/api", (req, res, next) => {
+  // Health check is public so monitoring tools can hit it
+  if (req.path === "/health") return next();
+
+  const token =
+    req.headers["x-boltclaw-token"] as string | undefined ??
+    (req.query.token as string | undefined);
+
+  if (!token || !tokenMatches(token)) {
+    res.status(401).json({
+      error: "Unauthorized",
+      message: "Missing or invalid API token. Check the terminal where BoltClaw is running, or pass ?token=... in the URL.",
+    });
+    return;
+  }
+
+  next();
+});
 
 // --- Audit Log (in-memory) ---
 
@@ -316,7 +384,7 @@ app.post("/api/scan", async (req, res) => {
     if (isGitHubUrl) {
       result.skillPath = skillPath;
     }
-    logEvent("scan", result.riskLevel === "danger" ? "danger" : "info", `Skill scanned: ${skillPath} — ${result.riskLevel}`, { path: skillPath, riskScore: result.riskScore, riskLevel: result.riskLevel, matches: result.matches.length });
+    logEvent("scan", result.riskLevel === "danger" ? "danger" : "info", `Skill scanned: ${skillPath} - ${result.riskLevel}`, { path: skillPath, riskScore: result.riskScore, riskLevel: result.riskLevel, matches: result.matches.length });
     res.json(result);
   } catch (err) {
     console.error("Scan failed:", err);
@@ -345,7 +413,7 @@ app.post("/api/scan/upload", upload.single("file"), async (req, res) => {
   try {
     const result = await scanSkill(req.file.path, req.file.originalname);
     result.skillPath = req.file.originalname;
-    logEvent("scan", result.riskLevel === "danger" ? "danger" : "info", `Uploaded File scanned: ${req.file.originalname} — ${result.riskLevel}`);
+    logEvent("scan", result.riskLevel === "danger" ? "danger" : "info", `Uploaded file scanned: ${req.file.originalname} - ${result.riskLevel}`);
     res.json(result);
   } catch (err) {
     console.error("Upload scan failed:", err);
@@ -444,11 +512,30 @@ const resolvedClientDir = existsSync(clientDist) ? clientDist : existsSync(clien
 
 if (resolvedClientDir) {
   app.use(express.static(resolvedClientDir));
-  app.get("*splat", (_req, res) => {
-    res.sendFile(join(resolvedClientDir, "index.html"));
+
+  // Serve index.html with the API token injected so the React app
+  // can authenticate without the user needing to copy-paste tokens.
+  let indexHtmlCache: string | null = null;
+  app.get("*splat", async (_req, res) => {
+    try {
+      if (!indexHtmlCache) {
+        indexHtmlCache = await readFile(join(resolvedClientDir, "index.html"), "utf-8");
+      }
+      // Inject a script tag that sets the token before the React app loads.
+      // The token is safe to embed here because the page is only served on
+      // localhost and requires the token to reach any API endpoint anyway.
+      const injected = indexHtmlCache.replace(
+        "</head>",
+        `<script>window.__BOLTCLAW_TOKEN__=${JSON.stringify(API_TOKEN)};</script>\n</head>`,
+      );
+      res.type("html").send(injected);
+    } catch {
+      res.sendFile(join(resolvedClientDir, "index.html"));
+    }
   });
 }
 
 app.listen(PORT, () => {
   console.log(`BoltClaw dashboard running on http://localhost:${PORT}`);
+  console.log(`  Authenticated URL: http://localhost:${PORT}?token=${API_TOKEN}`);
 });

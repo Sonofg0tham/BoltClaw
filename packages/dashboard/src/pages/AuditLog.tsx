@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { apiFetch } from "../api.js";
 import type { AuditEvent } from "../types.js";
 
 type SeverityFilter = "all" | "info" | "warning" | "danger";
@@ -44,7 +45,7 @@ export function AuditLog() {
 
   async function fetchEvents() {
     try {
-      const res = await fetch("/api/audit");
+      const res = await apiFetch("/api/audit");
       const data = await res.json();
       setEvents(data.events || []);
     } catch (err) {
@@ -56,7 +57,7 @@ export function AuditLog() {
 
   async function clearLog() {
     try {
-      await fetch("/api/audit", { method: "DELETE" });
+      await apiFetch("/api/audit", { method: "DELETE" });
       setEvents([]);
     } catch (err) {
       console.error("Failed to clear audit log:", err);

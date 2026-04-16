@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback, type ChangeEvent, type DragEvent } from "react";
 import { RiskBadge } from "../components/RiskBadge.js";
+import { apiFetch } from "../api.js";
 import type { Severity, ScanResult } from "../types.js";
 
 function riskBarColor(score: number): string {
@@ -42,7 +43,7 @@ export function SkillScanner() {
     formData.append("file", file);
 
     try {
-      const res = await fetch("/api/scan/upload", {
+      const res = await apiFetch("/api/scan/upload", {
         method: "POST",
         body: formData,
       });
@@ -77,7 +78,7 @@ export function SkillScanner() {
     setResult(null);
     setError(null);
     try {
-      const res = await fetch("/api/scan", {
+      const res = await apiFetch("/api/scan", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ path: path.trim() }),
@@ -108,7 +109,7 @@ export function SkillScanner() {
     formData.append("file", file);
 
     try {
-      const res = await fetch("/api/scan/upload", {
+      const res = await apiFetch("/api/scan/upload", {
         method: "POST",
         body: formData,
       });

@@ -80,6 +80,21 @@ For local development without Docker:
 npm run dev   # Starts dashboard at localhost:5173, proxies API to :3000
 ```
 
+## Authentication
+
+BoltClaw's API requires a shared-secret token to prevent other processes on your machine from reading or modifying your agent config.
+
+On first startup, BoltClaw generates a random token and saves it to `~/.openclaw/boltclaw-token`. The token is printed to the terminal and also embedded in a clickable URL:
+
+```
+BoltClaw API token: abc123...
+  Authenticated URL: http://localhost:3000?token=abc123...
+```
+
+Click the authenticated URL to open the dashboard. The token is stripped from the browser address bar automatically so it doesn't leak into history or referer headers.
+
+To use a custom token, set the `BOLTCLAW_API_TOKEN` environment variable before starting BoltClaw.
+
 ## Project Structure
 
 ```

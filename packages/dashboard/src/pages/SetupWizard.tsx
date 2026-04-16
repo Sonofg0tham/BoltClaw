@@ -3,6 +3,7 @@ import { SecurityScore } from "../components/SecurityScore.js";
 import { PermissionToggle } from "../components/PermissionToggle.js";
 import { RiskBadge } from "../components/RiskBadge.js";
 import { ErrorBanner } from "../components/ErrorBanner.js";
+import { apiFetch } from "../api.js";
 import type { PermissionLevel, Severity, CombinedConfig, SecuritySettingMeta, ScoreResult } from "../types.js";
 
 interface SecurityProfile {
@@ -71,7 +72,7 @@ export function SetupWizard({ onComplete }: { onComplete?: () => void }) {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch("/api/profiles")
+    apiFetch("/api/profiles")
       .then((r) => r.json())
       .then((d) => setProfiles(d.profiles))
       .catch(() => setError("Could not load security profiles. Is the server running?"));
@@ -126,7 +127,7 @@ export function SetupWizard({ onComplete }: { onComplete?: () => void }) {
   async function goToReview() {
     if (!config) return;
     try {
-      const res = await fetch("/api/config/score", {
+      const res = await apiFetch("/api/config/score", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(config),
@@ -144,7 +145,7 @@ export function SetupWizard({ onComplete }: { onComplete?: () => void }) {
     if (!config) return;
     setApplying(true);
     try {
-      const res = await fetch("/api/config", {
+      const res = await apiFetch("/api/config", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(config),

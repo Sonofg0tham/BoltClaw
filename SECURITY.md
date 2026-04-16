@@ -37,6 +37,7 @@ Zero known vulnerabilities in runtime dependencies as of last audit date. Runtim
 
 BoltClaw applies the following security measures to its own codebase:
 
+- **API authentication** - shared-secret token required for all API endpoints except health check, with constant-time comparison
 - **Input validation** - Zod schemas on all API request bodies
 - **Path traversal prevention** - scan paths validated against a configurable root directory, sensitive paths explicitly blocked
 - **Scan rate limiting** - concurrent scan limit to prevent resource exhaustion

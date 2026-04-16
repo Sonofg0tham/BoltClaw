@@ -3,6 +3,7 @@ import { SecurityScore } from "../components/SecurityScore.js";
 import { RiskBadge } from "../components/RiskBadge.js";
 import { ErrorBanner } from "../components/ErrorBanner.js";
 import { InfoIcon } from "../components/InfoIcon.js";
+import { apiFetch } from "../api.js";
 import type { PermissionLevel, Severity, CombinedConfig, ScoreResult, SandboxMode, ScanResult } from "../types.js";
 
 interface ConfigResponse {
@@ -82,7 +83,7 @@ export function PermissionDashboard() {
   async function loadConfig() {
     setLoading(true);
     try {
-      const res = await fetch("/api/config");
+      const res = await apiFetch("/api/config");
       const json = await res.json();
       setData(json);
     } catch {
@@ -94,7 +95,7 @@ export function PermissionDashboard() {
 
   async function loadBackups() {
     try {
-      const res = await fetch("/api/config/backups");
+      const res = await apiFetch("/api/config/backups");
       const json = await res.json();
       setBackups(json.backups);
     } catch {
@@ -105,7 +106,7 @@ export function PermissionDashboard() {
   async function restoreBackup(filename: string) {
     setRestoringBackup(filename);
     try {
-      const res = await fetch("/api/config/restore", {
+      const res = await apiFetch("/api/config/restore", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ filename }),
@@ -129,7 +130,7 @@ export function PermissionDashboard() {
     setAuditResults(null);
     setAuditError(null);
     try {
-      const res = await fetch("/api/scan/audit");
+      const res = await apiFetch("/api/scan/audit");
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || "Audit failed");
       setAuditResults(json.results);
@@ -147,7 +148,7 @@ export function PermissionDashboard() {
     const updated = structuredClone(data.config);
     updated.boltclaw.security[key as keyof typeof updated.boltclaw.security] = "deny";
     try {
-      const res = await fetch("/api/config", {
+      const res = await apiFetch("/api/config", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(updated),
@@ -167,7 +168,7 @@ export function PermissionDashboard() {
     else if (!updated.openclaw.agents.defaults.sandbox) updated.openclaw.agents.defaults.sandbox = { mode: "all" };
     else updated.openclaw.agents.defaults.sandbox.mode = "all";
     try {
-      const res = await fetch("/api/config", {
+      const res = await apiFetch("/api/config", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(updated),
@@ -185,7 +186,7 @@ export function PermissionDashboard() {
     if (!updated.openclaw.gateway) updated.openclaw.gateway = { bind: "loopback", mode: "local" };
     else { updated.openclaw.gateway.bind = "loopback"; updated.openclaw.gateway.mode = "local"; }
     try {
-      const res = await fetch("/api/config", {
+      const res = await apiFetch("/api/config", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(updated),
@@ -203,7 +204,7 @@ export function PermissionDashboard() {
     if (!updated.openclaw.skills) updated.openclaw.skills = { allowBundled: [] };
     else updated.openclaw.skills.allowBundled = [];
     try {
-      const res = await fetch("/api/config", {
+      const res = await apiFetch("/api/config", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(updated),
