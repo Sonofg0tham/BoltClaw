@@ -11,3 +11,6 @@ playwright-report/
 *.tsbuildinfo
 docker/openclaw-defaults/backups/
 c:tmp*
+
+# Local-only planning docs, not for public repo
+FIXES_ROUND_*.md
