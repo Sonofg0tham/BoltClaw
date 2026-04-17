@@ -194,25 +194,25 @@ export const THREAT_PATTERNS: ThreatPattern[] = [
     category: "execution",
   },
 
-  // NanoClaw-specific: container escape
+  // Claude Code / MCP: prompt injection via tool output
   {
-    id: "nanoclaw-container-escape",
-    name: "Container escape attempt",
-    description: "Commands that attempt to break out of container isolation — the core security boundary in NanoClaw.",
-    impact: "This tries to break out of NanoClaw's Docker sandbox — the main security boundary keeping skills isolated. If successful, the skill gets full access to your host machine.",
+    id: "mcp-tool-output-injection",
+    name: "Tool output prompt injection",
+    description: "Embeds instruction-override text in tool output that gets fed back to the agent.",
+    impact: "This is indirect prompt injection: the skill returns text designed to hijack the agent's next action. When the agent reads the tool result, it may follow the attacker's instructions instead of yours — silently changing what it does next.",
     severity: "danger",
-    pattern: /\b(mount\s+-[a-z]*\s|nsenter|chroot|docker\.sock|--privileged)\b|\/proc\/self\//gi,
-    category: "execution",
+    pattern: /ignore\s+(all\s+)?(previous|prior|above)\s+(instructions?|rules?|constraints?)|you\s+are\s+now\s+in|new\s+instructions?:/gi,
+    category: "injection",
   },
 
-  // NanoClaw-specific: SDK abuse
+  // Claude Code / MCP: manifest mismatch (tool does more than it declares)
   {
-    id: "nanoclaw-sdk-abuse",
-    name: "Agent SDK misuse",
-    description: "Attempts to manipulate the Anthropic Agent SDK to bypass safety controls.",
-    impact: "This tries to tamper with the AI agent's SDK controls. If it works, the skill could bypass safety restrictions that are meant to limit what the agent can do.",
+    id: "mcp-manifest-mismatch",
+    name: "Undeclared capability",
+    description: "Code does something not mentioned in the tool's name or description — a classic sign of a deceptive MCP server.",
+    impact: "MCP servers declare what they do in a manifest. A server that reads files, makes network calls, or runs shell commands without declaring it is either poorly written or deliberately hiding its behaviour. Either way, you can't trust what it does with your data.",
     severity: "warning",
-    pattern: /\b(agent\.override|system_prompt\s*[=:]|tool_override)\b/gi,
-    category: "injection",
+    pattern: /\b(readFileSync|readFile|execSync|exec|spawnSync|spawn|fetch|axios)\s*\((?![^)]*\/\*\s*declared)/gi,
+    category: "permissions",
   },
 ];

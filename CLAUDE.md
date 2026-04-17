@@ -4,33 +4,31 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-BoltClaw is the security control panel for claw-based AI agents. It provides a local web dashboard that enforces secure defaults, scans third-party skills before installation, and gives users visibility into what their AI agent can access. No cloud dependencies for core functionality.
+BoltClaw is a local security dashboard for developers running AI agents on their own machines. It provides skill threat scanning, guided config hardening, and a visual permission manager for Claude Code skills and MCP servers. No cloud dependencies for core functionality.
 
-BoltClaw is positioned as the security control panel for the claw ecosystem - it works across OpenClaw, NanoClaw, and NemoClaw, providing the visibility and configuration layer that runtime tools don't.
+BoltClaw is aimed at the solo developer or vibe coder who installs skills and MCP servers from GitHub, wants to know whether they're safe, and has no appetite for reading YARA rules or JSON audit reports. Every competitor in the AI agent security space is CLI-only and expert-oriented. BoltClaw is the visual, plain-English alternative.
 
-## Supported Platforms
+## Target Platforms
 
-- **OpenClaw** (openclaw.ai) - the original AI agent platform. BoltClaw provides config hardening, skill scanning, and permission management for OpenClaw's `openclaw.json`.
-- **NanoClaw** (github.com/qwibitai/nanoclaw) - a lightweight (~500 lines of code) OpenClaw alternative with container-first isolation via Docker Sandbox. Uses the same `SKILL.md` skill format as OpenClaw, so BoltClaw's skill scanner works with NanoClaw skills out of the box. NanoClaw stores skills in `.claude/skills/` rather than at the project root.
-- **NemoClaw** (Nvidia) - runtime security via OpenShell sandboxing and a privacy router. BoltClaw complements NemoClaw by providing the config hardening and skill scanning layer that NemoClaw's runtime approach doesn't cover.
+- **Claude Code skills** - Skills stored in `.claude/skills/` using the `SKILL.md` format. BoltClaw's scanner checks skills for 15 threat patterns before installation.
+- **MCP servers** - Model Context Protocol servers that extend Claude's tool use. BoltClaw checks MCP server code for undeclared capabilities, prompt injection vectors, and exfiltration patterns.
 
 ## Competitive Context
 
-BoltClaw sits alongside several other tools in the claw security space:
+- **SecureClaw (Adversa AI)** - 55 OWASP-mapped audit checks. CLI-only, no visual dashboard. Focuses on auditing, not guided hardening.
+- **AgentVerus / Skillscan Security / SkillScanner** - open source, expert-focused, CLI-only, ML classifiers (DeBERTa), structured trust reports. Aimed at AppSec engineers.
+- **Snyk ToxicSkills** - found prompt injection in 36% of scanned skills. Aimed at enterprise procurement.
+- **MintMCP** - real-time MCP interceptor with audit trails. Aimed at CISOs.
+- **Anthropic's `@anthropic-ai/sandbox-runtime`** - bubblewrap/seatbelt sandboxing for agent platform builders, not end users.
 
-- **SecureClaw (Adversa AI)** - a plugin and skill providing 55 audit checks mapped to OWASP. CLI-only, no visual dashboard. Focuses on auditing, not guided hardening.
-- **openclaw-security-monitor** - a scanner with 48-point checks, IOC feeds, and threat intel. Has a web dashboard but focuses on detection, not prevention.
-- **NemoClaw (Nvidia)** - runtime security with OpenShell sandboxing and a privacy router. No UI, no config management. Complements BoltClaw rather than competing with it.
-- **NanoClaw** - an alternative platform with container isolation from scratch. Great for new setups but doesn't help existing OpenClaw users.
-
-BoltClaw differs by combining accessibility (visual dashboard), cross-platform support (OpenClaw + NanoClaw + NemoClaw), and a prevention-first approach (guided setup, skill scanning before installation, config hardening).
+BoltClaw differs by combining accessibility (visual dashboard), plain-English threat explanations, and a prevention-first approach (guided setup, scan before install, config hardening). None of the enterprise tools can easily copy this without rebuilding their product.
 
 ## Tech Stack
 
 - **Backend:** Node.js (Express), TypeScript
 - **Frontend:** React (single-page app, functional components), TypeScript, Tailwind CSS
-- **Container:** Docker for isolated OpenClaw + Ollama testing
-- **Testing:** Playwright (21 end-to-end tests across 5 suites)
+- **Container:** Docker for isolated agent testing
+- **Testing:** Playwright (21 end-to-end tests across 5 suites), node:test (24 unit tests)
 - **Validation:** Zod for API request schemas
 - **Monorepo:** npm workspaces
 
@@ -38,29 +36,30 @@ BoltClaw differs by combining accessibility (visual dashboard), cross-platform s
 
 BoltClaw runs on localhost:3000 with four main UI features backed by a shared config engine:
 
-- **Setup Wizard** - 4-step guided flow producing a secure `openclaw.json` with preset profiles (Lockdown, Balanced, Developer, Migration Ready)
-- **Skill Scanner** - static analysis of OpenClaw and NanoClaw skills for 15 threat patterns across 6 categories (exfiltration, injection, obfuscation, permissions, filesystem, execution). Accepts local paths or GitHub URLs. Auto-detects platform. Each finding includes a "Why this matters" plain-English impact explanation. Risk levels: Safe, Caution, Warning, Danger
-- **Permission Dashboard** - real-time permission grid, circular security score gauge (A-F), Quick Fix buttons, OpenClaw settings (sandbox, gateway, bundled skills), findings list, Migration Advisor, backup/restore UI
+- **Setup Wizard** - 4-step guided flow producing a hardened agent config with preset profiles (Lockdown, Balanced, Developer, Migration Ready)
+- **Skill Scanner** - static analysis of Claude Code skills and MCP servers for 15 threat patterns across 6 categories (exfiltration, injection, obfuscation, permissions, filesystem, execution). Accepts local paths or GitHub URLs. Each finding includes a "Why this matters" plain-English impact explanation. Risk levels: Safe, Caution, Warning, Danger
+- **Permission Dashboard** - real-time permission grid, circular security score gauge (A-F), Quick Fix buttons, findings list grouped by severity, backup/restore UI
 - **Audit Log** - tracks every BoltClaw action (config reads/writes, scans, restores) with severity filters, search, and expandable details
 
-All config changes write through the **Config Engine** (`packages/config-engine/`), which manages two files:
-- `openclaw.json` - real OpenClaw schema (validated against v2026.3.13)
+All config changes write through the **Config Engine** (`packages/config-engine/`), which manages:
+- `openclaw.json` - agent config file (currently modelled on the openclaw schema; Phase 2 will retarget this to a real Claude Code / MCP config format)
 - `boltclaw.json` - sidecar for BoltClaw-specific toggles (security permissions, messaging allowlist)
 
-Automatic backup before every write. Bidirectional mapping between BoltClaw toggles and OpenClaw config values.
+Automatic backup before every write. Bidirectional mapping between BoltClaw toggles and config values.
 
 ## Monorepo Structure
 
 ```
 boltclaw/
-├── docker/               # Hardened OpenClaw container + docker-compose
+├── docker/               # Hardened agent container + docker-compose
 │   ├── docker-compose.yml
 │   ├── Dockerfile.dashboard
-│   └── openclaw-defaults/ # Seed config using real OpenClaw schema
+│   └── openclaw-defaults/ # Seed config (to be retargeted in Phase 2)
 ├── packages/
-│   ├── config-engine/    # Parse, validate, backup, and write openclaw.json + boltclaw.json
+│   ├── config-engine/    # Parse, validate, backup, and write agent config + boltclaw.json
 │   ├── skill-scanner/    # Static analysis - 15 patterns, 6 categories, risk scoring
-│   └── dashboard/        # React frontend + Express API server
+│   ├── dashboard/        # React frontend + Express API server
+│   └── mcp-server/       # MCP server exposing BoltClaw tools to Claude
 ├── tests/                # Playwright end-to-end tests (5 suites)
 ├── playwright.config.ts
 └── package.json          # Monorepo root with npm workspaces
@@ -69,11 +68,12 @@ boltclaw/
 ## Common Commands
 
 ```bash
-npm run docker:up        # Start all 3 containers (OpenClaw + Ollama + Dashboard)
+npm run docker:up        # Start containers (agent + Ollama + Dashboard)
 npm run docker:down      # Stop all containers
 npm run dev              # Start dashboard in dev mode (localhost:5173)
 npm run build            # Build all packages
-npm test                 # Run Playwright tests (requires containers running)
+npm run test:unit        # Run 24 unit tests (no containers needed)
+npm test                 # Run Playwright E2E tests (requires containers running)
 npm run test:ui          # Run Playwright with interactive UI
 ```
 
@@ -81,32 +81,20 @@ npm run test:ui          # Run Playwright with interactive UI
 
 These are non-negotiable design constraints:
 
-- BoltClaw must never require more permissions than OpenClaw itself
+- BoltClaw must never require more permissions than the agent it is securing
 - All config changes must be reversible (automatic backups)
 - Default to the most restrictive settings; users opt in to more access
-- Scan all skills before they touch the OpenClaw or NanoClaw runtime
+- Scan all skills and MCP servers before they touch the agent runtime
 - Every security toggle needs a plain-English explanation of what it does, its risk level, and what breaks if disabled
 
 ## Docker Container Setup
 
 3-container stack via docker-compose:
 
-- **OpenClaw** - `ghcr.io/openclaw/openclaw:latest`, hardened with read-only filesystem, bridge network only, tmpfs for writable dirs (tmp, canvas, cron, workspace, agents) with uid=1000 ownership
+- **Agent container** - hardened with read-only filesystem, bridge network only, tmpfs for writable dirs with uid=1000 ownership
 - **Ollama** - `ollama/ollama:latest`, local LLM on port 11434
 - **Dashboard** - built from `Dockerfile.dashboard`, serves UI on port 3000, includes git for GitHub URL scanning
 
-## Config Schema (Important)
+## Phase 2 Note
 
-OpenClaw's real config schema was discovered on 2026-03-17 by probing the Docker image. BoltClaw's original schema was completely wrong and caused OpenClaw to crash.
-
-**Valid top-level keys:** meta, commands, agents, gateway, skills, channels, auth, tools
-
-**Key paths:**
-- `gateway.mode`: "local" | "remote"
-- `gateway.bind`: "auto" | "lan" | "loopback" | "custom" | "tailnet"
-- `agents.defaults.sandbox.mode`: "off" | "non-main" | "all"
-- `skills.allowBundled`: array of strings (NOT boolean)
-
-**Invalid keys (rejected by OpenClaw):** `security.*`, `permissions.*`, `messaging.*`, `network.*`, `tools.allowAll`, `tools.allowed`, `skills.installed`, `gateway.expose`
-
-BoltClaw uses a sidecar approach: `openclaw.json` (real schema only) + `boltclaw.json` (BoltClaw toggles), with a mapper translating between them.
+The config engine currently targets a placeholder agent config schema. Phase 2 will rewrite it to target a real Claude Code or MCP config format. This is a 400-600 LOC change and should be done in a dedicated session. Do not start Phase 2 work without a confirmed target schema - it touches every config-engine test and the Permission Dashboard mapping layer.
