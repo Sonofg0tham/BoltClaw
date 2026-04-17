@@ -6,7 +6,8 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
-    "build": "tsc"
+    "build": "tsc",
+    "test:unit": "npx tsx --test src/analyzer.test.ts"
   },
   "devDependencies": {
     "typescript": "^5.7.0"

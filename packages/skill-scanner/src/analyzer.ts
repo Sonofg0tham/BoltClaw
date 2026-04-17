@@ -169,7 +169,7 @@ function calculateRiskScore(matches: ScanMatch[]): number {
 function scoreToLevel(score: number): Severity {
   if (score === 0) return "safe";
   if (score <= 20) return "caution";
-  if (score <= 50) return "warning";
+  if (score < 50) return "warning";
   return "danger";
 }
 
