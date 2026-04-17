@@ -2,7 +2,11 @@
 
 **The security control panel for claw-based AI agents**
 
-BoltClaw gives you visual security management, skill threat scanning, and guided hardening for OpenClaw, NanoClaw, and NemoClaw - so you can see what your agent can access, catch malicious skills before they run, and fix misconfigurations before they become headlines.
+## Why This Matters
+
+40,000+ OpenClaw instances were exposed due to insecure defaults. When OpenClaw agents connected to the Moltbook social network, researchers found prompt injection vectors, mass impersonation, and agents acting well beyond their owners' intent. BoltClaw's permission controls and skill scanning address exactly these failure modes - before they reach your machine.
+
+![BoltClaw dashboard demo](demo.gif)
 
 ## How BoltClaw is Different
 
@@ -146,6 +150,14 @@ npm test          # Run all tests (headless)
 npm run test:ui   # Run with Playwright UI for debugging
 ```
 
+### Unit tests
+
+14 unit tests across two packages (dashboard API validation and skill-scanner analysis engine):
+
+```bash
+npm run test:unit
+```
+
 ### Config round-trip verification
 
 All four security profiles have been tested against a live OpenClaw v2026.3.13 container:
@@ -167,10 +179,12 @@ OpenClaw detects config changes in real-time and hot-reloads without requiring a
 - **Ollama** - local LLM for testing without cloud dependencies
 - **BoltClaw Dashboard** - serves the UI and API, includes git for GitHub URL scanning
 
-## Why This Matters
-
-BoltClaw exists because 40,000+ OpenClaw instances were exposed due to insecure defaults. When OpenClaw agents connected to the Moltbook social network, researchers found prompt injection vectors, mass impersonation, and agents acting beyond their owners' intent. BoltClaw's permission controls and skill scanning address exactly these failure modes.
-
 ## Tech Stack
 
 TypeScript, React, Express, Vite, Docker, Zod, Tailwind CSS, Playwright
+
+## Licence and Monetisation
+
+BoltClaw is MIT licensed. Use it, fork it, ship it.
+
+There is no paid tier, no Pro plan, and no cloud component. The codebase exists as a portfolio piece demonstrating threat modelling, static analysis design, and secure API design in the AI security space. Contributions welcome.
