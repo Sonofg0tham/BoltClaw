@@ -144,7 +144,7 @@ export function SkillScanner() {
         <h2 className="text-2xl font-bold text-slate-100 mb-1.5">Skill Scanner</h2>
         <p className="text-slate-500 text-sm">
           Scan a skill for security threats before installation — paste a local path or GitHub URL.
-          Works with both OpenClaw and NanoClaw skills.
+          Works with Claude Code skills and MCP servers.
         </p>
       </div>
 
@@ -278,13 +278,9 @@ export function SkillScanner() {
                   {result.platform !== "unknown" && (
                     <span
                       className="px-2.5 py-0.5 rounded-full text-xs font-semibold"
-                      style={
-                        result.platform === "nanoclaw"
-                          ? { background: "rgba(88,28,135,0.3)", color: "#c084fc", border: "1px solid rgba(192,132,252,0.25)" }
-                          : { background: "rgba(30,64,175,0.3)", color: "#60a5fa", border: "1px solid rgba(96,165,250,0.25)" }
-                      }
+                      style={{ background: "rgba(30,64,175,0.3)", color: "#60a5fa", border: "1px solid rgba(96,165,250,0.25)" }}
                     >
-                      {result.platform === "nanoclaw" ? "NanoClaw Skill" : "OpenClaw Skill"}
+                      Claude Code Skill
                     </span>
                   )}
                 </div>

@@ -312,18 +312,13 @@ const CONFIG_DIR = process.env.OPENCLAW_CONFIG_PATH
   : undefined;
 
 // Attempt to resolve where skills live
-const SKILLS_DIR = process.env.OPENCLAW_SKILLS_PATH || (CONFIG_DIR ? join(CONFIG_DIR, "skills") : undefined);
+const SKILLS_DIR = process.env.CLAUDE_SKILLS_DIR || join(homedir(), ".claude", "skills");
 
-// Discover OpenClaw's bundled skills dir via npm root -g
+// Discover Claude Code skills directory
 async function findBundledSkillsDir(): Promise<string | null> {
-  const npmCmd = process.platform === "win32" ? "npm.cmd" : "npm";
-  try {
-    const { stdout } = await execFileAsync(npmCmd, ["root", "-g"], { timeout: 5000 });
-    const candidate = join(stdout.trim(), "openclaw", "skills");
-    return existsSync(candidate) ? candidate : null;
-  } catch {
-    return null;
-  }
+  const envSkillsDir = process.env.CLAUDE_SKILLS_DIR;
+  if (envSkillsDir && existsSync(envSkillsDir)) return envSkillsDir;
+  return null;
 }
 
 
@@ -572,7 +567,7 @@ app.get("/api/scan/audit", async (_req, res) => {
   }
 
   if (dirsToScan.length === 0) {
-    res.status(404).json({ error: "No skills directories found. Install OpenClaw or set OPENCLAW_SKILLS_PATH." });
+    res.status(404).json({ error: "No skills directories found. Ensure Claude Code is installed or set CLAUDE_SKILLS_DIR." });
     return;
   }
 

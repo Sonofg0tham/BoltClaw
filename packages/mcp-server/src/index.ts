@@ -35,10 +35,10 @@ server.registerTool(
   {
     title: "Scan Skill",
     description:
-      "Scan an OpenClaw or NanoClaw skill for security threats before installation. " +
+      "Scan a Claude Code skill or MCP server for security threats before installation. " +
       "Checks for 15 threat patterns across 6 categories: exfiltration, injection, " +
       "obfuscation, permissions, filesystem, and execution. " +
-      "Accepts a local path to a skill directory/file.",
+      "Accepts a local path to a skill directory or file.",
     inputSchema: z.object({
       path: z.string().describe("Local path to the skill directory or file to scan"),
     }),
@@ -92,7 +92,7 @@ server.registerTool(
   {
     title: "Get Security Config",
     description:
-      "Read the current OpenClaw + BoltClaw configuration and return the security score, " +
+      "Read the current agent + BoltClaw configuration and return the security score, " +
       "grade (A-F), and any findings. Shows permission levels (shell, filesystem, browser, network), " +
       "sandbox mode, gateway binding, and bundled skills status.",
     inputSchema: z.object({
@@ -118,7 +118,7 @@ server.registerTool(
         `- Browser: ${config.boltclaw.security.browser}`,
         `- Network: ${config.boltclaw.security.network}`,
         ``,
-        `### OpenClaw Settings`,
+        `### Agent Settings`,
         `- Sandbox: ${config.openclaw.agents?.defaults?.sandbox?.mode ?? "not set"}`,
         `- Gateway bind: ${config.openclaw.gateway?.bind ?? "not set"}`,
         `- Gateway mode: ${config.openclaw.gateway?.mode ?? "not set"}`,
@@ -157,7 +157,7 @@ server.registerTool(
   {
     title: "Set Security Config",
     description:
-      "Update specific security settings in the BoltClaw/OpenClaw configuration. " +
+      "Update specific security settings in the BoltClaw agent configuration. " +
       "Automatically backs up the current config before writing. " +
       "Returns the updated security score.",
     inputSchema: z.object({
@@ -219,9 +219,9 @@ server.registerTool(
   {
     title: "Apply Security Profile",
     description:
-      "Apply a pre-built security profile to the OpenClaw configuration. " +
+      "Apply a pre-built security profile to the agent configuration. " +
       "Available profiles: lockdown (maximum security), balanced (sensible defaults), " +
-      "developer (permissive for dev work), migrate (minimal config for NanoClaw migration). " +
+      "developer (permissive for dev work), migrate (minimal config for platform migration). " +
       "Automatically backs up current config before applying.",
     inputSchema: z.object({
       profile: z
@@ -277,7 +277,7 @@ server.registerTool(
   {
     title: "List Config Backups",
     description:
-      "List all available OpenClaw configuration backups. " +
+      "List all available agent configuration backups. " +
       "BoltClaw creates automatic backups before every config change.",
     inputSchema: z.object({
       configDir: z
@@ -323,7 +323,7 @@ server.registerTool(
   {
     title: "Restore Config Backup",
     description:
-      "Restore the OpenClaw configuration from a backup file. " +
+      "Restore the agent configuration from a backup file. " +
       "The current config is backed up first, so restores are always reversible.",
     inputSchema: z.object({
       filename: z.string().describe("Backup filename to restore (e.g. openclaw-2026-03-23T10-00-00-000Z.json)"),
@@ -361,18 +361,14 @@ const execFileAsync = promisify(execFile);
 async function discoverSkillDirs(): Promise<Array<{ root: string; source: "installed" | "bundled" }>> {
   const dirs: Array<{ root: string; source: "installed" | "bundled" }> = [];
 
-  // User-installed skills at ~/.openclaw/skills
-  const installedDir = join(homedir(), ".openclaw", "skills");
-  if (existsSync(installedDir)) dirs.push({ root: installedDir, source: "installed" });
+  // Claude Code stores skills in ~/.claude/skills
+  const claudeSkillsDir = join(homedir(), ".claude", "skills");
+  if (existsSync(claudeSkillsDir)) dirs.push({ root: claudeSkillsDir, source: "installed" });
 
-  // Bundled skills shipped with the openclaw npm package
-  const npmCmd = process.platform === "win32" ? "npm.cmd" : "npm";
-  try {
-    const { stdout } = await execFileAsync(npmCmd, ["root", "-g"], { timeout: 5000 });
-    const candidate = join(stdout.trim(), "openclaw", "skills");
-    if (existsSync(candidate)) dirs.push({ root: candidate, source: "bundled" });
-  } catch {
-    // npm not available
+  // Also check CLAUDE_SKILLS_DIR env var for custom locations
+  const envSkillsDir = process.env.CLAUDE_SKILLS_DIR;
+  if (envSkillsDir && existsSync(envSkillsDir)) {
+    dirs.push({ root: envSkillsDir, source: "bundled" });
   }
 
   return dirs;
@@ -383,14 +379,14 @@ server.registerTool(
   {
     title: "Scan Installed Skills",
     description:
-      "Scan all skills currently installed in OpenClaw — both bundled skills that ship with OpenClaw " +
-      "and user-installed skills from ClawHub. Auto-detects skill directories. " +
+      "Scan all Claude Code skills currently installed on this machine. " +
+      "Auto-detects the standard Claude Code skills directory. " +
       "Use this to audit what's already running, not just skills you're about to install.",
     inputSchema: z.object({
       skillsDir: z
         .string()
         .optional()
-        .describe("Optional path to a specific skills directory. If omitted, auto-detects OpenClaw's bundled and user-installed skill directories."),
+        .describe("Optional path to a specific skills directory. If omitted, auto-detects the Claude Code skills directory."),
     }),
   },
   async ({ skillsDir }: { skillsDir?: string }) => {
@@ -401,7 +397,7 @@ server.registerTool(
 
       if (dirsToScan.length === 0) {
         return {
-          content: [{ type: "text", text: "No skill directories found. Install OpenClaw globally or pass a skillsDir path." }],
+          content: [{ type: "text", text: "No skill directories found. Ensure Claude Code is installed or pass a skillsDir path." }],
         };
       }
 

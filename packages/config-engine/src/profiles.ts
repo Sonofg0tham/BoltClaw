@@ -75,7 +75,7 @@ export const PROFILES: SecurityProfile[] = [
     name: "Migration Ready",
     emoji: "\u{1F680}",
     description:
-      "Minimal OpenClaw config for users planning to migrate to NanoClaw. Disables everything except basic chat functionality so you can test NanoClaw in parallel without conflicts.",
+      "Minimal config for users evaluating alternative agent platforms. Disables everything except basic chat functionality so you can test in parallel without conflicts.",
     riskLevel: "Minimal",
     config: {
       openclaw: {
