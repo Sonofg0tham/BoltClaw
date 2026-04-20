@@ -61,6 +61,9 @@ BoltClaw is the only tool that combines visual permission management, plain-Engl
 # Install dependencies
 npm install
 
+# Run unit tests (no Docker needed)
+npm run test:unit
+
 # Start the agent + Ollama + Dashboard containers
 npm run docker:up
 

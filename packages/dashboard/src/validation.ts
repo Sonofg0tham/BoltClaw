@@ -2,10 +2,11 @@ import { z } from "zod";
 import { resolve, normalize, sep } from "node:path";
 import { homedir } from "node:os";
 
-// Scan root defaults to ~/.openclaw/skills if BOLTCLAW_SCAN_ROOT is unset.
+// Scan root defaults to ~/.claude/skills if BOLTCLAW_SCAN_ROOT is unset.
+// Override with the BOLTCLAW_SCAN_ROOT environment variable.
 // Resolved once at module load so later cwd changes cannot widen the allowed area.
 export const SCAN_ROOT = resolve(
-  process.env.BOLTCLAW_SCAN_ROOT ?? `${homedir()}/.openclaw/skills`
+  process.env.BOLTCLAW_SCAN_ROOT ?? `${homedir()}/.claude/skills`
 );
 
 // Sensitive substrings that must never appear in a resolved scan path, even

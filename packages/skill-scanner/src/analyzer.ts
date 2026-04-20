@@ -81,7 +81,7 @@ function detectPlatform(skillPath: string, files: string[], originalPath?: strin
   if (pathsToCheck.some((p) => p.includes(".claude/skills"))) {
     return "nanoclaw";
   }
-  // NanoClaw pattern: multiple subdirectories each containing a SKILL.md
+  // Claude Code skills collection: multiple subdirectories each containing a SKILL.md
   const skillMdFiles = files.filter((f) => {
     const relative = f.replace(skillPath, "").replace(/\\/g, "/").replace(/^\//, "");
     return relative.endsWith("/SKILL.md") || relative === "SKILL.md";
@@ -91,7 +91,7 @@ function detectPlatform(skillPath: string, files: string[], originalPath?: strin
     return relative === "SKILL.md";
   });
   if (hasTopLevelSkillMd) return "openclaw";
-  // Multiple SKILL.md files in subdirectories suggests NanoClaw skills collection
+  // Multiple SKILL.md files in subdirectories suggests a Claude Code skills collection
   if (skillMdFiles.length > 1) return "nanoclaw";
   return "unknown";
 }

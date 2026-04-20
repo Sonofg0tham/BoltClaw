@@ -1,6 +1,6 @@
 services:
   openclaw:
-    image: ghcr.io/openclaw/openclaw:latest
+    image: ghcr.io/openclaw/openclaw:latest  # placeholder — Phase 2 will retarget to a real agent image
     container_name: boltclaw-openclaw
     volumes:
       - ./openclaw-defaults/openclaw.json:/home/node/.openclaw/openclaw.json

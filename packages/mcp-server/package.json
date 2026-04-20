@@ -1,7 +1,7 @@
 {
   "name": "boltclaw",
-  "version": "0.2.0",
-  "description": "Security control panel for OpenClaw, NanoClaw and NemoClaw AI agents - config hardening, skill scanning, and risk assessment via MCP",
+  "version": "1.0.0",
+  "description": "Security control panel for Claude Code skills and MCP servers — config hardening, skill scanning, and risk assessment via MCP",
   "type": "module",
   "main": "dist/index.js",
   "bin": {
@@ -17,15 +17,15 @@
     "start": "node dist/index.js"
   },
   "keywords": [
-    "openclaw",
-    "nanoclaw",
-    "nemoclaw",
-    "security",
+    "claude-code",
     "mcp",
     "model-context-protocol",
-    "ai-agent",
     "skill-scanner",
-    "config-hardening"
+    "security",
+    "ai-agent",
+    "config-hardening",
+    "prompt-injection",
+    "appsec"
   ],
   "author": "Craig McCart (CJM Labs)",
   "license": "MIT",

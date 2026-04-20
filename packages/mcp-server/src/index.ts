@@ -99,7 +99,7 @@ server.registerTool(
       configDir: z
         .string()
         .optional()
-        .describe("Optional path to the config directory. Defaults to ~/.openclaw"),
+        .describe("Optional path to the config directory. Defaults to ~/.claude"),
     }),
   },
   async ({ configDir }: { configDir?: string }) => {
@@ -164,7 +164,7 @@ server.registerTool(
       configDir: z
         .string()
         .optional()
-        .describe("Optional path to the config directory. Defaults to ~/.openclaw"),
+        .describe("Optional path to the config directory. Defaults to ~/.claude"),
       shell: z.enum(["deny", "ask", "allow"]).optional().describe("Shell access level"),
       filesystem: z.enum(["deny", "ask", "allow"]).optional().describe("Filesystem access level"),
       browser: z.enum(["deny", "ask", "allow"]).optional().describe("Browser access level"),
@@ -230,7 +230,7 @@ server.registerTool(
       configDir: z
         .string()
         .optional()
-        .describe("Optional path to the config directory. Defaults to ~/.openclaw"),
+        .describe("Optional path to the config directory. Defaults to ~/.claude"),
     }),
   },
   async ({ profile, configDir }: { profile: string; configDir?: string }) => {
@@ -283,7 +283,7 @@ server.registerTool(
       configDir: z
         .string()
         .optional()
-        .describe("Optional path to the config directory. Defaults to ~/.openclaw"),
+        .describe("Optional path to the config directory. Defaults to ~/.claude"),
     }),
   },
   async ({ configDir }: { configDir?: string }) => {
@@ -330,7 +330,7 @@ server.registerTool(
       configDir: z
         .string()
         .optional()
-        .describe("Optional path to the config directory. Defaults to ~/.openclaw"),
+        .describe("Optional path to the config directory. Defaults to ~/.claude"),
     }),
   },
   async ({ filename, configDir }: { filename: string; configDir?: string }) => {
