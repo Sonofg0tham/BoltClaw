@@ -493,7 +493,8 @@ app.post("/api/scan", async (req, res) => {
     const check = validateLocalScanPath(skillPath);
     if (!check.ok) {
       activeScans--;
-      res.status(400).json({ error: check.error });
+      const errMsg = (check as { ok: false; error: string }).error;
+      res.status(400).json({ error: errMsg });
       return;
     }
     if (!existsSync(check.resolved)) {
@@ -603,7 +604,7 @@ app.get("/api/scan/audit", async (_req, res) => {
 
     // Sort highest risk first
     const riskOrder = { danger: 3, warning: 2, caution: 1, safe: 0 };
-    allResults.sort((a, b) => riskOrder[b.riskLevel] - riskOrder[a.riskLevel]);
+    allResults.sort((a, b) => (riskOrder[b.riskLevel] ?? 0) - (riskOrder[a.riskLevel] ?? 0));
 
     const skipped = totalDirs - totalScanned;
     logEvent("scan", "info", `Audited ${allResults.length} skills${skipped > 0 ? ` (${skipped} skipped)` : ""}`);

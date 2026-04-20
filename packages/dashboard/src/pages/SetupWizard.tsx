@@ -248,11 +248,6 @@ export function SetupWizard({ onComplete }: { onComplete?: () => void }) {
                   <div className="font-bold text-base text-slate-100 mb-2">{p.name}</div>
                   <RiskBadge severity={RISK_LEVEL_SEVERITY[p.riskLevel] || "caution"} className="mb-3" />
                   <p className="text-xs text-slate-400 leading-relaxed">{p.description}</p>
-                  {p.id === "migrate" && (
-                    <p className="text-xs mt-3 leading-relaxed" style={{ color: "#c084fc" }}>
-                      Designed for testing NanoClaw alongside OpenClaw.
-                    </p>
-                  )}
                 </button>
               );
             })}

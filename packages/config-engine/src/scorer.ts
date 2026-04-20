@@ -43,7 +43,7 @@ export function scoreConfig(config: CombinedConfig): ScoreResult {
     }
   }
 
-  // --- OpenClaw: sandbox mode ---
+  // --- Agent: sandbox mode ---
   const sandboxMode = config.openclaw.agents?.defaults?.sandbox?.mode;
   if (sandboxMode === "off") {
     score -= 20;
@@ -61,7 +61,7 @@ export function scoreConfig(config: CombinedConfig): ScoreResult {
     });
   }
 
-  // --- OpenClaw: gateway exposure ---
+  // --- Agent: gateway exposure ---
   const bind = config.openclaw.gateway?.bind;
   if (bind && bind !== "loopback") {
     score -= 15;
@@ -72,7 +72,7 @@ export function scoreConfig(config: CombinedConfig): ScoreResult {
     });
   }
 
-  // --- OpenClaw: bundled skills ---
+  // --- Agent: bundled skills ---
   const allowBundled = config.openclaw.skills?.allowBundled;
   if (allowBundled && allowBundled.length > 0) {
     score -= 5;

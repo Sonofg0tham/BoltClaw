@@ -267,7 +267,7 @@ export function PermissionDashboard() {
           style={{ background: "linear-gradient(180deg, #dc2626, #7f1d1d)" }}
         />
         Permission Status
-        <InfoIcon text="Controls what OpenClaw's agent can access. Deny blocks it completely. Ask prompts you each time before allowing. Allow grants unrestricted access — avoid this unless necessary." />
+        <InfoIcon text="Controls what the agent can access. Deny blocks it completely. Ask prompts you each time before allowing. Allow grants unrestricted access — avoid this unless necessary." />
       </h3>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
         {securityCards.map((card) => (
@@ -294,13 +294,13 @@ export function PermissionDashboard() {
         ))}
       </div>
 
-      {/* ─── OpenClaw settings ──────────────────────────── */}
+      {/* ─── Agent settings ─────────────────────────────── */}
       <h3 className="section-heading flex items-center gap-2">
         <span
           className="inline-block w-1 h-5 rounded-full"
           style={{ background: "linear-gradient(180deg, #dc2626, #7f1d1d)" }}
         />
-        OpenClaw Settings
+        Agent Settings
       </h3>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10">
         {/* Sandbox Mode */}
@@ -334,7 +334,7 @@ export function PermissionDashboard() {
           <div className="flex items-center justify-between mb-1.5">
             <span className="font-semibold text-slate-200 text-sm flex items-center gap-1.5">
               Gateway Bind
-              <InfoIcon text="Controls which network interfaces OpenClaw listens on. Loopback means only your own machine can connect — safest. LAN or auto exposes it to other devices on your network." />
+              <InfoIcon text="Controls which network interfaces the agent listens on. Loopback means only your own machine can connect — safest. LAN or auto exposes it to other devices on your network." />
             </span>
             <RiskBadge severity={gatewayBind && gatewayBind !== "loopback" ? "danger" : "safe"} />
           </div>
@@ -357,7 +357,7 @@ export function PermissionDashboard() {
           <div className="flex items-center justify-between mb-1.5">
             <span className="font-semibold text-slate-200 text-sm flex items-center gap-1.5">
               Bundled Skills
-              <InfoIcon text="Pre-installed skills that ship with OpenClaw. Disabling them means only skills you've explicitly approved can run — reduces your attack surface." />
+              <InfoIcon text="Pre-installed skills bundled with your agent. Disabling them means only skills you've explicitly approved can run — reduces your attack surface." />
             </span>
             <RiskBadge severity={allowBundled.length > 0 ? "caution" : "safe"} />
           </div>
@@ -459,7 +459,7 @@ export function PermissionDashboard() {
         </div>
       )}
 
-      {/* ─── Migration Advisor ───────────────────────────── */}
+      {/* ─── Security Advisor ────────────────────────────── */}
       {data.score.score < 40 && (
         <div
           className="rounded-2xl p-6 mb-8"
@@ -468,18 +468,10 @@ export function PermissionDashboard() {
             border: "1px solid rgba(251,191,36,0.25)",
           }}
         >
-          <h3 className="font-bold mb-2" style={{ color: "#fbbf24" }}>Migration Advisor</h3>
+          <h3 className="font-bold mb-2" style={{ color: "#fbbf24" }}>Security Advisor</h3>
           <p className="text-sm leading-relaxed" style={{ color: "rgba(253,230,138,0.8)" }}>
-            Your configuration has critical security gaps. Consider{" "}
-            <a
-              href="https://github.com/qwibitai/nanoclaw"
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{ color: "#fbbf24", textDecoration: "underline" }}
-            >
-              NanoClaw
-            </a>{" "}
-            for OS-level container isolation, or apply the Quick Fixes above.
+            Your configuration has critical security gaps. Apply the Quick Fixes above to restrict
+            shell, filesystem, and network access, or use the Setup Wizard to apply a Lockdown profile.
           </p>
         </div>
       )}

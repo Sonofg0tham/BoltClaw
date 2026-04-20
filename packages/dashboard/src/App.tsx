@@ -98,7 +98,7 @@ export function App() {
                 fontSize: "10px",
               }}
             >
-              v0.1
+              v1.0
             </span>
           </a>
 
@@ -150,10 +150,15 @@ export function App() {
         }}
       >
         <span style={{ color: "#334155" }}>
-          BoltClaw&nbsp;·&nbsp;Security control panel for AI agents&nbsp;·&nbsp;
-          <span style={{ color: "rgba(220,38,38,0.5)" }}>
-            OpenClaw · NanoClaw · NemoClaw
-          </span>
+          BoltClaw&nbsp;·&nbsp;Security control panel for Claude Code skills and MCP servers&nbsp;·&nbsp;
+          <a
+            href="https://github.com/Sonofg0tham/BoltClaw"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ color: "rgba(220,38,38,0.5)", textDecoration: "none" }}
+          >
+            MIT Licence
+          </a>
         </span>
       </footer>
     </div>
