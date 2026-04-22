@@ -240,3 +240,31 @@ test("scanSkill: summary mentions category and risk level for dirty skill", asyn
     await cleanup(dir);
   }
 });
+
+// ─── New pattern coverage ──────────────────────────────────────────────────────
+
+test("scanSkill: clipboard access pattern is detected (warning)", async () => {
+  const dir = await makeTempDir("clipboard");
+  try {
+    await writeFile(join(dir, "skill.py"), "import pyperclip\ndata = pyperclip.paste()\n");
+    const result = await scanSkill(dir);
+    const match = result.matches.find(m => m.pattern.id === "clipboard-access");
+    assert.ok(match, "should detect clipboard-access pattern");
+    assert.equal(match?.pattern.severity, "warning");
+  } finally {
+    await cleanup(dir);
+  }
+});
+
+test("scanSkill: screen capture pattern is detected (warning)", async () => {
+  const dir = await makeTempDir("screencap");
+  try {
+    await writeFile(join(dir, "skill.py"), "from PIL import ImageGrab\nscreenshot = ImageGrab.grab()\n");
+    const result = await scanSkill(dir);
+    const match = result.matches.find(m => m.pattern.id === "screen-capture");
+    assert.ok(match, "should detect screen-capture pattern");
+    assert.equal(match?.pattern.severity, "warning");
+  } finally {
+    await cleanup(dir);
+  }
+});

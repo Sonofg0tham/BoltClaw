@@ -2,6 +2,34 @@
 
 All notable changes to BoltClaw are documented here.
 
+## [1.1.0] - 2026-04-22
+
+### Scanner improvements
+
+- **Clipboard access pattern** — new `clipboard-access` pattern (warning) detects skills that
+  read from the system clipboard via `navigator.clipboard`, `pyperclip.paste()`, `pbpaste`,
+  `xclip -o`, `xdotool getclipboard`, or Win32 clipboard APIs. Clipboard content routinely
+  includes passwords, tokens, and private data and is never expected to leave the machine.
+- **Screen capture pattern** — new `screen-capture` pattern (warning) detects skills that take
+  screenshots via `PIL.ImageGrab`, `pyautogui.screenshot()`, `mss`, `screencapture`, `scrot`,
+  or the Electron `desktopCapturer` API. Silent screen capture is a serious privacy risk.
+- **mcp-manifest-mismatch tightened** — severity reduced from `warning` to `caution`, pattern
+  narrowed to synchronous file/shell operations (`readFileSync`, `readFile`, `execSync`,
+  `spawnSync`) only. Removed `fetch`, `axios`, and `exec` which were generating false positives
+  on legitimate MCP server code.
+
+### Package metadata
+
+- `packages/mcp-server/package.json` — author field updated to include `support@sonofg0tham.dev`.
+- npm version badge added to README.
+
+### Testing
+
+- 2 new unit tests: `clipboard-access` pattern detection, `screen-capture` pattern detection.
+- Total unit tests: 26 (9 server validation + 17 skill-scanner analysis).
+
+---
+
 ## [1.0.0] - 2026-04-20
 
 First stable release. BoltClaw is a local security dashboard for Claude Code skills and MCP

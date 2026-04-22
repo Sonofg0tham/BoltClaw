@@ -209,10 +209,32 @@ export const THREAT_PATTERNS: ThreatPattern[] = [
   {
     id: "mcp-manifest-mismatch",
     name: "Undeclared capability",
-    description: "Code does something not mentioned in the tool's name or description — a classic sign of a deceptive MCP server.",
-    impact: "MCP servers declare what they do in a manifest. A server that reads files, makes network calls, or runs shell commands without declaring it is either poorly written or deliberately hiding its behaviour. Either way, you can't trust what it does with your data.",
-    severity: "warning",
-    pattern: /\b(readFileSync|readFile|execSync|exec|spawnSync|spawn|fetch|axios)\s*\((?![^)]*\/\*\s*declared)/gi,
+    description: "Code reads files or runs shell commands synchronously — verify these match the tool's declared capabilities.",
+    impact: "MCP servers should declare what they do. A server that reads files or runs shell commands without mentioning it in the tool description may be doing more than you expect. This is worth reviewing, but is not always malicious — some tools legitimately need filesystem access.",
+    severity: "caution",
+    pattern: /\b(readFileSync|readFile|execSync|spawnSync)\s*\(/gi,
     category: "permissions",
+  },
+
+  // Clipboard exfiltration
+  {
+    id: "clipboard-access",
+    name: "Clipboard access",
+    description: "Reads from or writes to the system clipboard.",
+    impact: "This skill can silently read whatever you have copied — passwords, API tokens, code snippets, or personal data. Clipboard content is never expected to leave your machine, making this a high-risk pattern even without an obvious network call.",
+    severity: "warning",
+    pattern: /\b(navigator\.clipboard\.read|clipboard\.readText|pbpaste|xclip\s+-o|xdotool\s+getclipboard|pyperclip\.paste|win32clipboard\.GetClipboardData|GetClipboardData)\b/gi,
+    category: "exfiltration",
+  },
+
+  // Screen capture
+  {
+    id: "screen-capture",
+    name: "Screen capture",
+    description: "Takes screenshots or captures screen content.",
+    impact: "This skill can capture images of your entire screen, including open documents, browser tabs, passwords typed into other apps, and private conversations. Screenshots taken silently are a serious privacy risk — you would never know it happened.",
+    severity: "warning",
+    pattern: /\b(PIL\.ImageGrab|ImageGrab\.grab|pyautogui\.screenshot|mss\.mss|screencapture\b|desktopCapturer\.getSources|getDisplayMedia)\b|(?<!\w)scrot\b/gi,
+    category: "execution",
   },
 ];

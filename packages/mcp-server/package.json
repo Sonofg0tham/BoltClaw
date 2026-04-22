@@ -1,6 +1,6 @@
 {
   "name": "boltclaw",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Security control panel for Claude Code skills and MCP servers — config hardening, skill scanning, and risk assessment via MCP",
   "type": "module",
   "main": "dist/index.js",
@@ -27,7 +27,7 @@
     "prompt-injection",
     "appsec"
   ],
-  "author": "Craig McCart (CJM Labs)",
+  "author": "Craig McCart <support@sonofg0tham.dev> (CJM Labs)",
   "license": "MIT",
   "repository": {
     "type": "git",

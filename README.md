@@ -1,5 +1,7 @@
 # BoltClaw
 
+[![npm version](https://img.shields.io/npm/v/boltclaw.svg)](https://www.npmjs.com/package/boltclaw)
+
 **The security control panel for Claude Code skills and MCP servers**
 
 ## Why This Matters
@@ -149,7 +151,7 @@ npm run test:ui   # Run with Playwright UI for debugging
 
 ### Unit tests
 
-24 unit tests across two packages (dashboard API validation and skill-scanner analysis engine). No containers needed:
+26 unit tests across two packages (dashboard API validation and skill-scanner analysis engine). No containers needed:
 
 ```bash
 npm run test:unit

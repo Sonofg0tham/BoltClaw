@@ -28,7 +28,7 @@ BoltClaw differs by combining accessibility (visual dashboard), plain-English th
 - **Backend:** Node.js (Express), TypeScript
 - **Frontend:** React (single-page app, functional components), TypeScript, Tailwind CSS
 - **Container:** Docker for isolated agent testing
-- **Testing:** Playwright (21 end-to-end tests across 5 suites), node:test (24 unit tests)
+- **Testing:** Playwright (21 end-to-end tests across 5 suites), node:test (26 unit tests)
 - **Validation:** Zod for API request schemas
 - **Monorepo:** npm workspaces
 
@@ -72,7 +72,7 @@ npm run docker:up        # Start containers (agent + Ollama + Dashboard)
 npm run docker:down      # Stop all containers
 npm run dev              # Start dashboard in dev mode (localhost:5173)
 npm run build            # Build all packages
-npm run test:unit        # Run 24 unit tests (no containers needed)
+npm run test:unit        # Run 26 unit tests (no containers needed)
 npm test                 # Run Playwright E2E tests (requires containers running)
 npm run test:ui          # Run Playwright with interactive UI
 ```
